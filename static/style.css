@@ -157,6 +157,7 @@ label {
 }
 
 input, select, textarea {
+    resize: none;
     width: 100%;
     padding: 12px 16px;
     border: 1px solid var(--input-border);
@@ -168,13 +169,9 @@ input, select, textarea {
 }
 
 input:focus, select:focus, textarea:focus {
+    resize: none;
     border-color: var(--primary-green);
     box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
-}
-
-textarea {
-    resize: vertical; 
-    max-width: 100%;  
 }
 
 .btn {
