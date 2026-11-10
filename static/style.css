@@ -96,7 +96,6 @@ nav a:hover {
     border-radius: 50%;
 }
 
-/* Notification Badge */
 .nav-badge {
     background-color: #dc3545;
     color: #ffffff;
@@ -173,6 +172,11 @@ input:focus, select:focus, textarea:focus {
     box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
 }
 
+textarea {
+    resize: vertical; 
+    max-width: 100%;  
+}
+
 .btn {
     display: inline-block;
     background-color: var(--primary-green);
@@ -198,7 +202,6 @@ input:focus, select:focus, textarea:focus {
     background-color: var(--accent-gold-hover);
 }
 
-/* Flash Alerts */
 .alert {
     padding: 14px 20px;
     border-radius: 14px;
