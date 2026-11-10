@@ -1,21 +1,24 @@
-import re
+import os
 import time
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import re
 import mysql.connector
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 
-app = Flask(__name__, template_folder='cirrms-system/templates', static_folder='cirrms-system/static')
-app.secret_key = 'ilayang_butnong_secret_key'
+app = Flask(__name__)
+app.secret_key = 'cirrms_secret_key_secure_barangay'
 
-db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'mosquito17',
-    'database': 'cirrms_db'
-}
-
+# ----------------- DATABASE CONFIGURATION -----------------
+# Automatically switches between local XAMPP and Cloud database via Environment Variables
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
+    return mysql.connector.connect(
+        host=os.environ.get('DB_HOST', 'sql.freedb.tech'),
+        user=os.environ.get('DB_USER', 'u_G5ctnQ'),
+        password=os.environ.get('DB_PASSWORD', 'ySrGeMfiQ7Sa'),
+        database=os.environ.get('DB_NAME', 'freedb_SlzV8ViE'),
+        port=int(os.environ.get('DB_PORT', 3306))
+    )
 
+# ----------------- PROFANITY & SPAM FILTERS -----------------
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
     'bobo', 'tanga', 'gago', 'tarantado', 'ulol', 'putangina', 'pukingina', 'tangina', 'bwisit', 
@@ -23,20 +26,16 @@ INAPPROPRIATE_WORDS = [
 ]
 
 def contains_profanity(text):
-    normalized = re.sub(r'[^\w\s]', '', text.lower())
-    words = normalized.split()
-    for word in words:
-        if word in INAPPROPRIATE_WORDS:
-            return True
-    for bad_word in INAPPROPRIATE_WORDS:
-        if bad_word in normalized:
-            return True
-    return False
+    text_lower = text.lower()
+    return any(word in text_lower for word in INAPPROPRIATE_WORDS)
 
 def is_spam(text):
+    # Check for excessive character repetition (e.g., "aaaaaaa")
     if re.search(r'(.)\1{4,}', text):
         return True
     return False
+
+# ----------------- PUBLIC ROUTE (SINGLE PAGE) -----------------
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -49,8 +48,8 @@ def home():
         incident_type = request.form['incident_type']
         location = request.form['location'].strip()
         description = request.form['description'].strip()
-
         last_submission = session.get('last_submission_time', 0)
+
         if time.time() - last_submission < 15:
             flash('Spam protection alert: Please wait 15 seconds before submitting another incident report.', 'error')
             return redirect(url_for('home'))
@@ -74,8 +73,7 @@ def home():
         if contains_profanity(name) or contains_profanity(location) or contains_profanity(description):
             flash('Submission rejected: Inappropriate or offensive language detected.', 'error')
             return redirect(url_for('home'))
-
-        # Save to Database
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -94,9 +92,12 @@ def home():
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_dashboard'))
+
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
 
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -108,16 +109,25 @@ def admin_login():
         if admin:
             session['admin_logged_in'] = True
             session['admin_username'] = admin['username']
+            flash('Welcome back, Barangay Official!', 'success')
             return redirect(url_for('admin_dashboard'))
         else:
-            flash('Invalid admin credentials.', 'error')
+            flash('Invalid username or password. Please try again.', 'error')
+            return redirect(url_for('admin_login'))
 
     return render_template('login.html')
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    session.clear()
+    flash('Logged out successfully.', 'info')
+    return redirect(url_for('admin_login'))
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if not session.get('admin_logged_in'):
-        flash('Please login to access the admin dashboard.', 'error')
+        flash('Access denied. Please log in as an administrator.', 'error')
         return redirect(url_for('admin_login'))
 
     conn = get_db_connection()
@@ -129,55 +139,35 @@ def admin_dashboard():
 
     return render_template('dashboard.html', incidents=incidents)
 
-@app.route('/admin/logs')
-def admin_logs():
-    if not session.get('admin_logged_in'):
-        flash('Please login to access the admin logs.', 'error')
-        return redirect(url_for('admin_login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT logs.id AS log_id, logs.incident_id, logs.admin_username, 
-               logs.action_taken, logs.status_updated, logs.logged_at,
-               incidents.resident_name, incidents.incident_type, incidents.location
-        FROM incident_logs logs
-        JOIN incidents ON logs.incident_id = incidents.id
-        ORDER BY logs.logged_at DESC
-    """)
-    logs = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    return render_template('logs.html', logs=logs)
-
-@app.route('/admin/update_incident/<int:id>', methods=['POST'])
+@app.route('/admin/incident/update/<int:id>', methods=['POST'])
 def update_incident(id):
     if not session.get('admin_logged_in'):
+        flash('Access denied.', 'error')
         return redirect(url_for('admin_login'))
 
+    new_priority = request.form.get('priority')
+    new_status = request.form.get('status')
+    action_taken = request.form.get('action_taken')
+    admin_user = session.get('admin_username', 'admin')
+
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True, buffered=True)
+    cursor = conn.cursor(buffered=True, dictionary=True)
 
     cursor.execute("SELECT status FROM incidents WHERE id = %s", (id,))
-    existing_incident = cursor.fetchone()
-
-    if existing_incident and existing_incident['status'] == 'Resolved':
+    current_record = cursor.fetchone()
+    
+    if current_record and current_record['status'] == 'Resolved':
         cursor.close()
         conn.close()
-        flash(f'Incident #INC-{"%04d" % id} is already Resolved and cannot be modified.', 'error')
+        flash('Error: This incident record is permanently locked and cannot be modified.', 'error')
         return redirect(url_for('admin_dashboard'))
-
-    status = request.form['status']
-    priority = request.form['priority']
-    action_taken = request.form['action_taken']
-    admin_username = session.get('admin_username', 'admin')
 
     cursor.execute("""
         UPDATE incidents 
-        SET status = %s, priority = %s, action_taken = %s 
+        SET priority = %s, status = %s, action_taken = %s 
         WHERE id = %s
-    """, (status, priority, action_taken, id))
+    """, (new_priority, new_status, action_taken, id))
 
     cursor.execute("SELECT id FROM incident_logs WHERE incident_id = %s", (id,))
     existing_log = cursor.fetchone()
@@ -185,31 +175,41 @@ def update_incident(id):
     if existing_log:
         cursor.execute("""
             UPDATE incident_logs 
-            SET admin_username = %s, action_taken = %s, status_updated = %s, logged_at = CURRENT_TIMESTAMP
+            SET action_taken = %s, status_updated_to = %s, admin_user = %s, timestamp = CURRENT_TIMESTAMP
             WHERE incident_id = %s
-        """, (admin_username, action_taken, status, id))
+        """, (action_taken, new_status, admin_user, id))
     else:
         cursor.execute("""
-            INSERT INTO incident_logs (incident_id, admin_username, action_taken, status_updated)
+            INSERT INTO incident_logs (incident_id, action_taken, status_updated_to, admin_user)
             VALUES (%s, %s, %s, %s)
-        """, (id, admin_username, action_taken, status))
+        """, (id, action_taken, new_status, admin_user))
 
     conn.commit()
     cursor.close()
     conn.close()
 
-    if status == 'Resolved':
-        flash(f'Incident #INC-{"%04d" % id} marked as Resolved and is now permanently locked.', 'success')
-    else:
-        flash(f'Incident #INC-{"%04d" % id} updated successfully.', 'success')
-
+    flash(f'Incident #INC-{id:04d} updated and recorded in audit logs successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/admin/logout')
-def admin_logout():
-    session.clear()
-    flash('Logged out successfully.', 'info')
-    return redirect(url_for('admin_login'))
+@app.route('/admin/logs')
+def admin_logs():
+    if not session.get('admin_logged_in'):
+        flash('Access denied.', 'error')
+        return redirect(url_for('admin_login'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT incident_logs.*, incidents.resident_name, incidents.incident_type 
+        FROM incident_logs
+        JOIN incidents ON incident_logs.incident_id = incidents.id
+        ORDER BY incident_logs.timestamp DESC
+    """)
+    logs = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    return render_template('logs.html', logs=logs)
 
 @app.route('/api/unread_count')
 def unread_count():
@@ -224,8 +224,6 @@ def unread_count():
     conn.close()
 
     return {'unread_count': result['count'] if result else 0}
-
-import os
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
