@@ -7,8 +7,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 app = Flask(__name__)
 app.secret_key = 'cirrms_secret_key_secure_barangay'
 
-# ----------------- DATABASE CONFIGURATION -----------------
-# Automatically switches between local XAMPP and Cloud database via Environment Variables
 def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get('DB_HOST', 'sql.freedb.tech'),
@@ -18,7 +16,6 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-# ----------------- PROFANITY & SPAM FILTERS -----------------
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
     'bobo', 'tanga', 'gago', 'tarantado', 'ulol', 'putangina', 'pukingina', 'tangina', 'bwisit', 
@@ -30,12 +27,9 @@ def contains_profanity(text):
     return any(word in text_lower for word in INAPPROPRIATE_WORDS)
 
 def is_spam(text):
-    # Check for excessive character repetition (e.g., "aaaaaaa")
     if re.search(r'(.)\1{4,}', text):
         return True
     return False
-
-# ----------------- PUBLIC ROUTE (SINGLE PAGE) -----------------
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
