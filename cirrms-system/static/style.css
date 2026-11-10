@@ -1,0 +1,326 @@
+/* =========================================================
+   🎨 THEME VARIABLES & ROOT CONFIGURATION
+   ========================================================= */
+:root {
+    --bg-color: #f4f7f6;
+    --card-bg: #ffffff;
+    --primary-green: #1b4332;
+    --primary-green-hover: #2d6a4f;
+    --accent-gold: #d4af37;
+    --accent-gold-hover: #b89628;
+    --text-main: #2b2b2b;
+    --text-muted: #6c757d;
+    --input-border: #ced4da;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --primary-green: #2d6a4f;
+    --primary-green-hover: #40916c;
+    --accent-gold: #d4af37;
+    --accent-gold-hover: #f4d068;
+    --text-main: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --input-border: #333333;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================================
+   🔤 BASE & TYPOGRAPHY SETTINGS
+   ========================================================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6, th, .btn, .modal-card h3 {
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: -0.3px;
+}
+
+strong, .alert {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* =========================================================
+   🏛️ HEADER & NAVIGATION BAR
+   ========================================================= */
+header {
+    background-color: var(--primary-green);
+    color: #ffffff;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+header h1 span {
+    color: var(--accent-gold);
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+
+nav a:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+#theme-toggle {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 50%;
+}
+
+/* Notification Badge */
+.nav-badge {
+    background-color: #dc3545;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 50px;
+    margin-left: 6px;
+    vertical-align: middle;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+.badge-pulse {
+    animation: bounce-alert 0.5s ease 2;
+}
+
+@keyframes bounce-alert {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* =========================================================
+   📦 CONTAINER & CARDS (WIDER DESKTOP LAYOUT)
+   ========================================================= */
+.container {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: 24px;
+    padding: 35px;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    margin-bottom: 30px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+h2 {
+    color: var(--primary-green);
+    margin-bottom: 10px;
+}
+
+/* =========================================================
+   📝 FORM CONTROLS & BUTTONS
+   ========================================================= */
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    background-color: var(--card-bg);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.15);
+}
+
+.btn {
+    display: inline-block;
+    background-color: var(--primary-green);
+    color: #ffffff;
+    padding: 12px 28px;
+    border: none;
+    border-radius: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background-color: var(--primary-green-hover);
+}
+
+.btn-gold {
+    background-color: var(--accent-gold);
+    color: #121212;
+}
+
+.btn-gold:hover {
+    background-color: var(--accent-gold-hover);
+}
+
+/* Flash Alerts */
+.alert {
+    padding: 14px 20px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+.alert-success { background-color: rgba(40, 167, 69, 0.15); color: #28a745; border: 1px solid #28a745; }
+.alert-error { background-color: rgba(220, 53, 69, 0.15); color: #dc3545; border: 1px solid #dc3545; }
+.alert-info { background-color: rgba(23, 162, 184, 0.15); color: #17a2b8; border: 1px solid #17a2b8; }
+
+/* =========================================================
+   📊 DATA TABLES (DESKTOP & ADMIN)
+   ========================================================= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th {
+    background-color: var(--primary-green);
+    color: #ffffff;
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+th:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+th:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+td {
+    padding: 16px;
+    border-bottom: 1px solid var(--input-border);
+    vertical-align: middle;
+}
+
+/* =========================================================
+   ⚠️ CONFIRMATION MODAL POPUP
+   ========================================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-card {
+    background-color: var(--card-bg);
+    color: var(--text-main);
+    padding: 30px 25px;
+    border-radius: 24px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 15px 40px var(--shadow-color);
+    border: 2px solid var(--accent-gold);
+    transform: scale(0.85);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-overlay.active .modal-card {
+    transform: scale(1);
+}
+
+.modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.modal-card h3 { color: var(--primary-green); font-size: 1.3rem; margin-bottom: 10px; }
+.modal-card p { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+
+.btn-secondary {
+    background-color: transparent;
+    border: 2px solid var(--input-border);
+    color: var(--text-main);
+    padding: 10px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.btn-secondary:hover { background-color: var(--input-border); }
+
+@media screen and (max-width: 768px) {
+    header { flex-direction: column; text-align: center; padding: 1rem; gap: 15px; }
+    nav { flex-wrap: wrap; justify-content: center; gap: 10px; }
+    nav a { font-size: 0.9rem; padding: 6px 12px; }
+    .container { width: 100%; margin: 20px auto; padding: 0 10px; }
+    .card { padding: 20px 15px; border-radius: 16px; }
+    header h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.3rem; text-align: center; }
+    table { font-size: 0.85rem; }
+    th, td { padding: 10px 12px; }
+    .modal-card { padding: 25px 20px; }
+    .modal-actions { flex-direction: column; }
+    .modal-actions button { width: 100%; margin-bottom: 8px; }
+}

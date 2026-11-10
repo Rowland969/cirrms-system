@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Official Incident Activity & Audit Logs</h2>
+    <p style="margin-bottom: 20px; color: var(--text-muted);">Historical logs of actions taken by Barangay Ilayang Butnong officials.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Log Ref</th>
+                <th>Incident Number</th>
+                <th>Resident & Incident Type</th>
+                <th>Action / Remarks Taken</th>
+                <th>Status Updated To</th>
+                <th>Admin User</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td><small style="color: var(--text-muted);">#LOG-{{ "%04d" % log.log_id }}</small></td>
+                <td><strong style="color: var(--accent-gold);">#INC-{{ "%04d" % log.incident_id }}</strong></td>
+                <td>
+                    <strong>{{ log.resident_name }}</strong><br>
+                    <small>{{ log.incident_type }} ({{ log.location }})</small>
+                </td>
+                <td>{{ log.action_taken }}</td>
+                <td>
+                    <span class="btn btn-gold" style="padding: 4px 10px; font-size: 12px; display: inline-block;">
+                        {{ log.status_updated }}
+                    </span>
+                </td>
+                <td><strong>{{ log.admin_username }}</strong></td>
+                <td><small>{{ log.logged_at }}</small></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

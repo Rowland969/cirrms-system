@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIRRMS - Barangay Ilayang Butnong</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>CIRRMS | <span>Brgy. Ilayang Butnong</span></h1>
+        <nav>
+            {% if session.get('admin_logged_in') and request.endpoint in ['admin_dashboard', 'admin_logs'] %}
+                <a href="{{ url_for('admin_dashboard') }}" style="position: relative;">
+                    Incidents Management
+                    <span id="nav-notification-badge" class="nav-badge" style="display: none;">0</span>
+                </a>
+                <a href="{{ url_for('admin_logs') }}">Activity Logs</a>
+                <a href="{{ url_for('admin_logout') }}">Logout</a>
+            {% endif %}
+            
+            <button id="theme-toggle" title="Toggle Dark/Light Mode">🌙</button>
+        </nav>
+    </header>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <audio id="notification-sound" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const toggleBtn = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme');
+
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            toggleBtn.textContent = '☀️';
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            let theme = document.documentElement.getAttribute('data-theme');
+            if (theme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                toggleBtn.textContent = '🌙';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                toggleBtn.textContent = '☀️';
+            }
+        });
+
+        /* {% if session.get('admin_logged_in') and request.endpoint in ['admin_dashboard', 'admin_logs'] %} */
+        let previousPendingCount = null;
+
+        function checkNewIncidents() {
+            fetch('/api/unread_count')
+                .then(response => response.json())
+                .then(data => {
+                    const currentCount = data.unread_count;
+                    const badge = document.getElementById('nav-notification-badge');
+                    const sound = document.getElementById('notification-sound');
+
+                    if (badge) {
+                        if (currentCount > 0) {
+                            badge.textContent = currentCount;
+                            badge.style.display = 'inline-block';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+
+                    if (previousPendingCount !== null && currentCount > previousPendingCount) {
+                        if (sound) sound.play().catch(() => {});
+                        if (badge) {
+                            badge.classList.add('badge-pulse');
+                            setTimeout(() => badge.classList.remove('badge-pulse'), 1000);
+                        }
+                    }
+
+                    previousPendingCount = currentCount;
+                })
+                .catch(err => console.log('Notification check skipped:', err));
+        }
+
+        checkNewIncidents();
+        setInterval(checkNewIncidents, 5000);
+        /* {% endif %} */
+    </script>
+</body>
+</html>

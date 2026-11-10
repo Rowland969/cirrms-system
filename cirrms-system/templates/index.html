@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+    <h2>Community Incident Reporting Portal</h2>
+    <p style="margin-bottom: 20px; color: var(--text-muted);">Submit reports directly to Barangay Ilayang Butnong officials.</p>
+    
+    <form action="{{ url_for('home') }}" method="POST">
+        
+        <div class="form-group">
+            <label for="resident_name">Full Name</label>
+            <input 
+                type="text" 
+                id="resident_name"
+                name="resident_name" 
+                required 
+                pattern="[A-Za-z\s]+" 
+                title="Name must contain letters and spaces only (no numbers allowed)" 
+                oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
+                placeholder="e.g., Juan Dela Cruz"
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="contact_number">Contact Number (For Call/Text update)</label>
+            <input 
+                type="tel" 
+                id="contact_number"
+                name="contact_number" 
+                required 
+                pattern="[0-9]{11}" 
+                maxlength="11"
+                title="Contact number must be exactly 11 digits (no letters allowed)" 
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                placeholder="09XX-XXX-XXXX"
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="incident_type">Incident Type</label>
+            <select name="incident_type" id="incident_type" required>
+                <option value="Noise Disturbance">Noise Disturbance</option>
+                <option value="Infrastructure Issue">Infrastructure Issue / Damage</option>
+                <option value="Waste / Sanitation">Waste Management / Sanitation</option>
+                <option value="Security / Patrol Concern">Security / Patrol Concern</option>
+                <option value="Medical Emergency">Medical Emergency Assistance</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="location">Specific Location (Purok / Street)</label>
+            <input 
+                type="text" 
+                id="location" 
+                name="location" 
+                required 
+                minlength="3" 
+                placeholder="e.g., Purok 2, Main Street"
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description of Incident</label>
+            <textarea 
+                id="description" 
+                name="description" 
+                rows="4" 
+                required 
+                minlength="10" 
+                maxlength="500" 
+                placeholder="Provide details regarding the situation (at least 10 characters)..."
+            ></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-gold">Submit Incident Report</button>
+    </form>
+</div>
+{% endblock %}
