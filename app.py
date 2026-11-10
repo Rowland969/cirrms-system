@@ -5,16 +5,13 @@ import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
 app = Flask(__name__)
-app.secret_key = 'cirrms_secret_key_secure_barangay'
 
 def get_db_connection():
-    # If running on Render, it will use environment variables. 
-    # If running locally, it defaults to your local XAMPP MySQL server.
     return mysql.connector.connect(
-        host=os.environ.get('DB_HOST', 'localhost'),
-        user=os.environ.get('DB_USER', 'root'),
-        password=os.environ.get('DB_PASSWORD', ''),
-        database=os.environ.get('DB_NAME', 'cirrms_db'),
+        host=os.environ.get('DB_HOST', 'sql.freedb.tech'),
+        user=os.environ.get('DB_USER', 'u_G5ctnQ'),
+        password=os.environ.get('DB_PASSWORD', 'ySrGeMfiQ7Sa'),
+        database=os.environ.get('DB_NAME', 'freedb_SlzV8ViE'),
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
