@@ -5,6 +5,7 @@ import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY') or 'cirrms_secret_key_secure_barangay'
 
 def get_db_connection():
     return mysql.connector.connect(
