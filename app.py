@@ -45,7 +45,24 @@ def send_verification_email(recipient_email, verify_link):
         """
     }
 
-        
+    try:
+        req = urllib.request.Request(
+            url, 
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                "accept": "application/json",
+                "api-key": api_key,
+                "content-type": "application/json"
+            },
+            method="POST"
+        )
+
+        with urllib.request.urlopen(req) as response:
+            return response.status == 201  
+
+    except Exception as e:
+        print(f"Error sending email via Brevo API: {str(e)}")
+        return False
 
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
