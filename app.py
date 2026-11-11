@@ -244,7 +244,7 @@ def admin_dashboard():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM incidents ORDER BY created_at DESC")
+    cursor.execute("SELECT * FROM incidents WHERE status != 'Resolved' ORDER BY created_at DESC")
     incidents = cursor.fetchall()
     cursor.close()
     conn.close()
