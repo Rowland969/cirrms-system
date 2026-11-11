@@ -97,6 +97,44 @@
         checkNewIncidents();
         setInterval(checkNewIncidents, 5000);
          { endif }
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Confirm Logout</h3>
+            <p>Are you sure you want to securely log out of the admin dashboard?</p>
+            <div class="modal-actions">
+                <button id="cancelLogout" class="btn btn-secondary">Cancel</button>
+                <a href="{{ url_for('admin_logout') }}" class="btn btn-danger">Yes, Log Out</a>
+            </div>
+        </div>
+    </div>
+
+<!-- Modal Logic -->
+
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogout = document.getElementById('cancelLogout');
+
+    if (logoutBtn && logoutModal) {
+        // Show modal when Logout link is clicked
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault(); 
+            logoutModal.style.display = 'flex';
+        });
+
+        // Hide modal when Cancel is clicked
+        cancelLogout.addEventListener('click', function() {
+            logoutModal.style.display = 'none';
+        });
+
+        // Hide modal if admin clicks outside the white box
+        window.addEventListener('click', function(e) {
+            if (e.target === logoutModal) {
+                logoutModal.style.display = 'none';
+            }
+        });
+    }
     </script>
 </body>
 </html>
