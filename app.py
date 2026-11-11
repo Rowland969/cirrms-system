@@ -2,9 +2,8 @@ import os
 import time
 import re
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import urllib.request
+import json
 import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
@@ -20,43 +19,48 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-# --- ONE-TAP EMAIL VERIFICATION SENDER ---
+# --- ONE-TAP EMAIL VERIFICATION VIA BREVO API ---
 def send_verification_email(recipient_email, verify_link):
-    sender_email = os.environ.get('MAIL_USERNAME')
-    sender_password = os.environ.get('MAIL_PASSWORD')
+    api_key = os.environ.get('BREVO_API_KEY')
+    sender_email = os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
     
-    if not sender_email or not sender_password:
-        print("WARNING: MAIL_USERNAME or MAIL_PASSWORD not set.")
+    if not api_key:
+        print("WARNING: BREVO_API_KEY not set in environment variables.")
         return False
 
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = sender_email
-        msg['To'] = recipient_email
-        msg['Subject'] = 'CIRRMS Admin Portal - One-Tap Login Verification'
-
-        body = f"""
-        Hello Barangay Official,
-
-        You requested access to the CIRRMS Admin Portal. 
-
-        Click the secure button/link below to instantly verify and log in:
-        {verify_link}
-
-        If you did not request this, please ignore this email.
-
-        Brgy. Ilayang Butnong Incident Management System
+    url = "https://api.brevo.com/v3/smtp/email"
+    
+    payload = {
+        "sender": {"name": "CIRRMS System", "email": sender_email},
+        "to": [{"email": recipient_email}],
+        "subject": "CIRRMS Admin Portal - One-Tap Login Verification",
+        "htmlContent": f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f5; border-radius: 8px;">
+                <h2 style="color: #1b4332;">Barangay Official Login</h2>
+                <p>Hello, you requested access to the CIRRMS Admin Portal.</p>
+                <p>Click the button below to instantly verify your identity and log in:</p>
+                <a href="{verify_link}" style="display: inline-block; padding: 12px 24px; background-color: #1b4332; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px;">Verify & Log In</a>
+                <p style="margin-top: 25px; color: #666; font-size: 0.9rem;">If you did not request this, please ignore this email.</p>
+            </div>
         """
-        msg.attach(MIMEText(body, 'plain'))
+    }
 
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, recipient_email, msg.as_string())
-        server.quit()
-        return True
+    try:
+        req = urllib.request.Request(
+            url, 
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                "accept": "application/json",
+                "api-key": api_key,
+                "content-type": "application/json"
+            },
+            method="POST"
+        )
+        
+        with urllib.request.urlopen(req) as response:
+            return response.status == 201
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
+        print(f"Error sending email via Brevo API: {str(e)}")
         return False
 
 INAPPROPRIATE_WORDS = [
@@ -147,19 +151,14 @@ def admin_login():
             
             verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
             
-            # Safely grab email from DB, or fallback to the system MAIL_USERNAME
-            recipient_email = admin.get('email') if admin and admin.get('email') else os.environ.get('MAIL_USERNAME')
+            recipient_email = admin.get('email') if admin and admin.get('email') else os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
             
-            if not recipient_email:
-                flash('Error: No email address configured for this admin account or SMTP settings.', 'error')
-                return redirect(url_for('admin_login'))
-
             email_sent = send_verification_email(recipient_email, verify_link)
             
             if email_sent:
                 flash('Credentials confirmed! Check your email and click the verification link to log in instantly.', 'success')
             else:
-                flash('Failed to send verification email. Check Gmail App Password settings.', 'error')
+                flash('Failed to send verification email. Check Brevo API settings.', 'error')
         else:
             flash('Invalid username or password.', 'error')
             
@@ -173,7 +172,6 @@ def verify_tap(username, token):
         session['admin_logged_in'] = True
         session['admin_username'] = username
         
-        # Clean up temporary session tokens
         session.pop('pending_admin', None)
         session.pop('verify_token', None)
         
