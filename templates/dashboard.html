@@ -150,4 +150,17 @@
         }
     });
 </script>
+<!-- Confirm Update Modal (Placed at the very bottom) -->
+<div id="updateModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Confirm Update</h3>
+        <p>Are you sure you want to save this incident update?</p>
+        
+        <div class="modal-actions">
+            <button type="button" id="cancelUpdate" class="btn btn-secondary" style="border-radius: 20px;">Cancel</button>
+            <!-- Make sure this button connects to your form submission -->
+            <button type="button" id="confirmUpdateBtn" class="btn" style="background-color: #d4af37; color: black; font-weight: bold; border-radius: 20px;">Confirm & Save</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
