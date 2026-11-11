@@ -20,7 +20,7 @@
             {% for log in logs %}
             <tr>
                 <td><small style="color: var(--text-muted);">#LOG-{{ "%04d" % log.log_id }}</small></td>
-                <td><strong style="color: var(--accent-gold);">#INC-{{ "%04d" % log.incident_id }}</strong></td>
+                <td><strong style="color: var(--accent-gold);">#INC-{{ "%04d" % loop.index }}</strong></td>
                 <td>
                     <strong>{{ log.resident_name }}</strong><br>
                     <small>{{ log.incident_type }} ({{ log.location }})</small>

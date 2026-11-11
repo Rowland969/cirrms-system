@@ -208,7 +208,6 @@ def verify_tap(username, token):
             flash('Invalid or expired verification link.', 'error')
             return redirect(url_for('admin_login'))
 
-        # Immediately consume the token and log in
         cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
         conn.commit()
 
