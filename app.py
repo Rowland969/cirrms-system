@@ -20,7 +20,6 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-# --- DATABASE TOKEN-BASED ONE-TAP EMAIL VERIFICATION ---
 def send_verification_email(recipient_email, verify_link):
     api_key = os.environ.get('BREVO_API_KEY')
     sender_email = os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
