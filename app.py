@@ -125,6 +125,11 @@ def admin_login():
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
 
+    # FIXED: Always clear pending verification when visiting the login page fresh
+    if request.method == 'GET':
+        session.pop('pending_admin', None)
+        session.pop('verify_token', None)
+
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password'].strip()
@@ -137,12 +142,10 @@ def admin_login():
         conn.close()
 
         if admin:
-            # Generate secure random token for one-tap link
             verify_token = f"{random.randint(10000000, 99999999)}"
             session['pending_admin'] = admin['username']
             session['verify_token'] = verify_token
             
-            # Generate One-Tap Verification URL
             verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
             
             recipient_email = admin.get('email', os.environ.get('MAIL_USERNAME'))
@@ -159,7 +162,6 @@ def admin_login():
 
     return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
 
-# --- ONE-TAP VERIFICATION ROUTE ---
 @app.route('/admin/verify-tap/<username>/<token>')
 def verify_tap(username, token):
     if token == session.get('verify_token') and username == session.get('pending_admin'):
