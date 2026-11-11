@@ -211,18 +211,23 @@ def admin_dashboard():
         flash('Access denied. Please log in.', 'error')
         return redirect(url_for('admin_login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    conn = None
+    cursor = None
     try:
-        cursor.execute("SELECT * FROM incidents WHERE status != 'Resolved' ORDER BY id DESC")
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        # Handle both non-resolved and NULL statuses safely
+        cursor.execute("SELECT * FROM incidents WHERE status != 'Resolved' OR status IS NULL ORDER BY id DESC")
         incidents = cursor.fetchall()
     except Exception as e:
-        print(f"Database Error on Dashboard: {e}")
+        print(f"Dashboard Error: {e}")
         flash(f"Database error loading dashboard: {e}", 'error')
         incidents = []
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
     return render_template('dashboard.html', incidents=incidents)
 
