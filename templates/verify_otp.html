@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card" style="max-width: 450px; margin: 40px auto; text-align: center;">
+    <h2>Security Verification</h2>
+    <p style="margin-bottom: 25px; color: var(--text-muted);">Please enter the 6-digit verification code sent to your administrator email.</p>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="margin-bottom: 20px; padding: 10px; border-radius: 6px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div style="margin-bottom: 20px;">
+            <input type="text" name="otp" placeholder="Enter 6-digit OTP" maxlength="6" required style="width: 100%; padding: 12px; font-size: 1.2rem; text-align: center; letter-spacing: 4px; border: 2px solid var(--input-border); border-radius: 8px;">
+        </div>
+        <button type="submit" class="btn" style="width: 100%; background-color: var(--primary-green); color: white; padding: 12px; font-weight: bold; border-radius: 8px;">Verify & Access Portal</button>
+    </form>
+</div>
+{% endblock %}

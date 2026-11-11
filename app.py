@@ -1,6 +1,10 @@
 import os
 import time
 import re
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
@@ -15,6 +19,44 @@ def get_db_connection():
         database=os.environ.get('DB_NAME', 'cirrms_db'),
         port=int(os.environ.get('DB_PORT', 3306))
     )
+
+# --- EMAIL OTP HELPER FUNCTION ---
+def send_otp_email(recipient_email, otp_code):
+    sender_email = os.environ.get('MAIL_USERNAME')
+    sender_password = os.environ.get('MAIL_PASSWORD')
+    
+    if not sender_email or not sender_password:
+        print("WARNING: MAIL_USERNAME or MAIL_PASSWORD not set in environment variables.")
+        return False
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient_email
+        msg['Subject'] = 'CIRRMS Admin Login - One-Time Password (OTP)'
+
+        body = f"""
+        Hello Barangay Official,
+
+        Your One-Time Password (OTP) for logging into the CIRRMS Admin Portal is:
+
+        {otp_code}
+
+        This code is valid for this session. Please do not share this code with anyone.
+
+        Brgy. Ilayang Butnong Incident Management System
+        """
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error sending OTP email: {str(e)}")
+        return False
 
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
@@ -101,15 +143,52 @@ def admin_login():
         conn.close()
 
         if admin:
-            session['admin_logged_in'] = True
-            session['admin_username'] = admin['username']
-            flash('Welcome back, Barangay Official!', 'success')
-            return redirect(url_for('admin_dashboard'))
+            # Generate 6-digit OTP
+            otp_code = f"{random.randint(100000, 999999)}"
+            session['pending_admin'] = admin['username']
+            session['pending_email'] = admin.get('email', os.environ.get('MAIL_USERNAME'))
+            session['otp_code'] = otp_code
+
+            # Send OTP email
+            email_sent = send_otp_email(session['pending_email'], otp_code)
+            
+            if email_sent:
+                flash('Credentials verified. Please enter the 6-digit OTP sent to your email.', 'success')
+                return redirect(url_for('verify_otp'))
+            else:
+                flash('Failed to send OTP email. Check SMTP settings.', 'error')
+                return redirect(url_for('admin_login'))
         else:
             flash('Invalid username or password. Please try again.', 'error')
             return redirect(url_for('admin_login'))
 
     return render_template('login.html')
+
+@app.route('/admin/verify-otp', methods=['GET', 'POST'])
+def verify_otp():
+    if not session.get('pending_admin'):
+        flash('Unauthorized access. Please log in first.', 'error')
+        return redirect(url_for('admin_login'))
+
+    if request.method == 'POST':
+        entered_otp = request.form.get('otp', '').strip()
+        
+        if entered_otp == session.get('otp_code'):
+            session['admin_logged_in'] = True
+            session['admin_username'] = session.get('pending_admin')
+            
+            # Clean up temporary OTP session variables
+            session.pop('pending_admin', None)
+            session.pop('pending_email', None)
+            session.pop('otp_code', None)
+            
+            flash('Welcome back, Barangay Official!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Invalid OTP code. Please try again.', 'error')
+            return redirect(url_for('verify_otp'))
+
+    return render_template('verify_otp.html')
 
 @app.route('/admin/logout')
 def admin_logout():
@@ -138,7 +217,6 @@ def update_incident(id):
         flash('Access denied.', 'error')
         return redirect(url_for('admin_login'))
 
-    # If someone visits the URL directly via browser GET, redirect them back safely
     if request.method == 'GET':
         return redirect(url_for('admin_dashboard'))
 
@@ -165,7 +243,6 @@ def update_incident(id):
         WHERE id = %s
     """, (new_priority, new_status, action_taken, id))
 
-    # Safe query using SELECT * to prevent column-not-found errors
     cursor.execute("SELECT * FROM incident_logs WHERE incident_id = %s", (id,))
     existing_log = cursor.fetchone()
 
@@ -200,7 +277,6 @@ def admin_logs():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Uses incident_id as log reference and safely maps all columns without missing ID errors
         cursor.execute("""
             SELECT 
                 incident_logs.incident_id AS log_id,
