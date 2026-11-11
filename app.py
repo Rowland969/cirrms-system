@@ -195,8 +195,7 @@ def admin_logs():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Swapped incidents.incident_id back to incidents.id 
-        # in case that was the column name mismatch causing the crash
+        # FIXED: Changed the ORDER BY clause to use log_id instead of logged_at
         cursor.execute("""
             SELECT 
                 incident_logs.*, 
@@ -205,17 +204,17 @@ def admin_logs():
                 incidents.location
             FROM incident_logs
             JOIN incidents ON incident_logs.incident_id = incidents.id
-            ORDER BY incident_logs.logged_at DESC
+            ORDER BY incident_logs.log_id DESC
         """)
         
         logs = cursor.fetchall()
         cursor.close()
         conn.close()
 
+        # Returning the normal page now!
         return render_template('logs.html', logs=logs)
-    
+        
     except Exception as e:
-        # If the database or template crashes, this prints the exact reason
         return f"<div style='padding:50px; font-family:sans-serif;'><h2>System Crash Report:</h2><h3 style='color:red;'>{str(e)}</h3></div>"
 
 @app.route('/api/unread_count')
