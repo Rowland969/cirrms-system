@@ -176,11 +176,12 @@ def admin_login():
 
     return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
 
-@app.route('/admin/verify-tap/<username>/<token>', methods=['GET', 'POST'])
+@app.route('/admin/verify-tap/<username>/<token>')
 def verify_tap(username, token):
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
 
+    # Ignore browser background prefetching / email scanners
     if request.headers.get('Sec-Purpose') == 'prefetch' or request.headers.get('Purpose') == 'prefetch':
         return '', 200
 
@@ -209,24 +210,20 @@ def verify_tap(username, token):
             flash('Invalid or expired verification link.', 'error')
             return redirect(url_for('admin_login'))
 
-        if request.method == 'GET':
-            return render_template('verify_tap.html', username=username, token=token)
+        # Immediately consume the token and log in
+        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
+        conn.commit()
 
-        if request.method == 'POST':
-            cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
-            conn.commit()
-
-            session['admin_logged_in'] = True
-            session['admin_username'] = username
-            session.pop('pending_admin', None)
-            
-            flash('Verification successful! Welcome to the portal.', 'success')
-            return redirect(url_for('admin_dashboard'))
+        session['admin_logged_in'] = True
+        session['admin_username'] = username
+        session.pop('pending_admin', None)
+        
+        flash('Verification successful! Welcome to the portal.', 'success')
+        return redirect(url_for('admin_dashboard'))
 
     except Exception as e:
         print(f"CRITICAL VERIFY TAP ERROR: {str(e)}")
-        # Temporarily display the exact error on screen so we can see what broke
-        flash(f"Debug Error: {str(e)}", 'error')
+        flash('Verification error occurred. Please try logging in again.', 'error')
         return redirect(url_for('admin_login'))
 
     finally:
