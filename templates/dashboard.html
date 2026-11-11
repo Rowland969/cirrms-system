@@ -87,14 +87,15 @@
     </table>
 </div>
 
-<div id="confirmModal" class="modal-overlay">
-    <div class="modal-card">
-        <div class="modal-icon" id="modalIcon">⚠️</div>
-        <h3 id="modalTitle">Confirm Update</h3>
-        <p id="modalMessage">Are you sure you want to save this incident update?</p>
+<div id="updateModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Confirm Update</h3>
+        <p>Are you sure you want to save this incident update?</p>
+        
         <div class="modal-actions">
-            <button type="button" class="btn-secondary" id="cancelModalBtn">Cancel</button>
-            <button type="button" class="btn btn-gold" id="confirmModalBtn">Confirm & Save</button>
+            <button type="button" id="cancelUpdate" class="btn btn-secondary" style="border-radius: 20px;">Cancel</button>
+            <!-- Make sure this button connects to your form submission -->
+            <button type="button" id="confirmUpdateBtn" class="btn" style="background-color: #d4af37; color: black; font-weight: bold; border-radius: 20px;">Confirm & Save</button>
         </div>
     </div>
 </div>
@@ -150,17 +151,4 @@
         }
     });
 </script>
-<!-- Confirm Update Modal (Placed at the very bottom) -->
-<div id="updateModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <h3>Confirm Update</h3>
-        <p>Are you sure you want to save this incident update?</p>
-        
-        <div class="modal-actions">
-            <button type="button" id="cancelUpdate" class="btn btn-secondary" style="border-radius: 20px;">Cancel</button>
-            <!-- Make sure this button connects to your form submission -->
-            <button type="button" id="confirmUpdateBtn" class="btn" style="background-color: #d4af37; color: black; font-weight: bold; border-radius: 20px;">Confirm & Save</button>
-        </div>
-    </div>
-</div>
 {% endblock %}
