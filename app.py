@@ -11,7 +11,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY') or 'cirrms_secret_key_secure_barangay'
 
-
 def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get('DB_HOST', 'localhost'),
@@ -21,105 +20,61 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-
+# --- DATABASE TOKEN-BASED ONE-TAP EMAIL VERIFICATION ---
 def send_verification_email(recipient_email, verify_link):
     api_key = os.environ.get('BREVO_API_KEY')
-    sender_email = os.environ.get('SENDER_EMAIL')
-    if not api_key or not sender_email:
+    sender_email = os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
+    
+    if not api_key:
+        print("WARNING: BREVO_API_KEY not set in environment variables.")
         return False
 
+    url = "https://api.brevo.com/v3/smtp/email"
+    
     payload = {
-        'sender': {'email': sender_email},
-        'to': [{'email': recipient_email}],
-        'subject': 'Admin login verification',
-        'htmlContent': (
-            '<p>Click the link below to verify your admin login. '
-            'This link expires in 15 minutes.</p>'
-            f'<p><a href="{verify_link}">Verify login</a></p>'
-        )
+        "sender": {"name": "CIRRMS System", "email": sender_email},
+        "to": [{"email": recipient_email}],
+        "subject": "CIRRMS Admin Portal - One-Tap Login Verification",
+        "htmlContent": f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f5; border-radius: 8px;">
+                <h2 style="color: #1b4332;">Barangay Official Login</h2>
+                <p>Hello, you requested access to the CIRRMS Admin Portal.</p>
+                <p>Click the button below to instantly verify your identity and log in:</p>
+                <a href="{verify_link}" style="display: inline-block; padding: 12px 24px; background-color: #1b4332; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px;">Verify & Log In</a>
+                <p style="margin-top: 25px; color: #666; font-size: 0.9rem;">If you did not request this, please ignore this email.</p>
+            </div>
+        """
     }
-    req = urllib.request.Request(
-        'https://api.brevo.com/v3/smtp/email',
-        data=json.dumps(payload).encode('utf-8'),
-        headers={
-            'accept': 'application/json',
-            'api-key': api_key,
-            'content-type': 'application/json'
-        },
-        method='POST'
-    )
+
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            return 200 <= response.status < 300
-    except Exception:
+        req = urllib.request.Request(
+            url, 
+            data=json.dumps(payload).encode('utf-8'),
+            headers={
+                "accept": "application/json",
+                "api-key": api_key,
+                "content-type": "application/json"
+            },
+            method="POST"
+        )
+        
+        with urllib.request.urlopen(req) as response:
+            return response.status == 201
+    except Exception as e:
+        print(f"Error sending email via Brevo API: {str(e)}")
         return False
-
-
-@app.route('/admin/verify-tap/<username>/<token>', methods=['GET', 'POST'])
-def verify_tap(username, token):
-    # Bypasses check if admin is already logged in
-    if session.get('admin_logged_in'):
-        return redirect(url_for('admin_dashboard'))
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
-    admin = cursor.fetchone()
-
-    is_valid = False
-    if admin and admin.get('token_expiry'):
-        expiry = admin['token_expiry']
-        if isinstance(expiry, str):
-            try:
-                expiry = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                expiry = None
-
-        current_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-        if expiry and current_utc < expiry:
-            is_valid = True
-
-    if not is_valid:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-        flash('Invalid or expired verification link.', 'error')
-        return redirect(url_for('admin_login'))
-
-    if request.method == 'GET':
-        cursor.close()
-        conn.close()
-        return render_template('verify_tap.html', username=username, token=token)
-
-    if request.method == 'POST':
-        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        session['admin_logged_in'] = True
-        session['admin_username'] = username
-        session.pop('pending_admin', None)
-
-        flash('Verification successful! Welcome to the portal.', 'success')
-        return redirect(url_for('admin_dashboard'))
-
 
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
-    'bobo', 'tanga', 'gago', 'tarantado', 'ulol', 'putangina', 'pukingina', 'tangina', 'bwisit',
+    'bobo', 'tanga', 'gago', 'tarantado', 'ulol', 'putangina', 'pukingina', 'tangina', 'bwisit', 
     'leche', 'puta', 'kantot', 'kupal', 'bayag', 'tae', 'inutil', 'hayop', 'puki', 'titi', 'tamod'
 ]
-
 
 def contains_profanity(text):
     return any(word in text.lower() for word in INAPPROPRIATE_WORDS)
 
-
 def is_spam(text):
     return bool(re.search(r'(.)\1{4,}', text))
-
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -133,11 +88,6 @@ def home():
         location = request.form['location'].strip()
         description = request.form['description'].strip()
         last_submission = session.get('last_submission_time', 0)
-
-        if (is_spam(name) or is_spam(location) or is_spam(description) or
-                contains_profanity(name) or contains_profanity(location) or contains_profanity(description)):
-            flash('Submission rejected due to content policy filters.', 'error')
-            return redirect(url_for('home'))
 
         if time.time() - last_submission < 15:
             flash('Spam protection alert: Please wait 15 seconds before submitting another incident report.', 'error')
@@ -158,7 +108,7 @@ def home():
         if is_spam(name) or is_spam(location) or is_spam(description) or contains_profanity(description):
             flash('Submission rejected due to content policy filters.', 'error')
             return redirect(url_for('home'))
-
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -174,7 +124,6 @@ def home():
         return redirect(url_for('home'))
 
     return render_template('index.html')
-
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -192,8 +141,9 @@ def admin_login():
 
         if admin:
             verify_token = f"{random.randint(10000000, 99999999)}"
+            # Token valid for 15 minutes, stored permanently in DB
             expiry_time = datetime.datetime.now() + datetime.timedelta(minutes=15)
-
+            
             cursor.execute("""
                 UPDATE admins SET verify_token = %s, token_expiry = %s WHERE username = %s
             """, (verify_token, expiry_time, admin['username']))
@@ -202,12 +152,12 @@ def admin_login():
             conn.close()
 
             session['pending_admin'] = admin['username']
-
+            
             verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
             recipient_email = admin.get('email') if admin and admin.get('email') else os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
-
+            
             email_sent = send_verification_email(recipient_email, verify_link)
-
+            
             if email_sent:
                 flash('Credentials confirmed! Check your email and click the verification link to log in instantly.', 'success')
             else:
@@ -216,18 +166,44 @@ def admin_login():
             cursor.close()
             conn.close()
             flash('Invalid username or password.', 'error')
-
+            
         return redirect(url_for('admin_login'))
 
     return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
 
+@app.route('/admin/verify-tap/<username>/<token>')
+def verify_tap(username, token):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
+    admin = cursor.fetchone()
+
+    if admin and admin['token_expiry'] and datetime.datetime.now() < admin['token_expiry']:
+        # Clear token so it can never be reused
+        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        session['admin_logged_in'] = True
+        session['admin_username'] = username
+        session.pop('pending_admin', None)
+        
+        flash('Verification successful! Welcome to the portal.', 'success')
+        return redirect(url_for('admin_dashboard'))
+    else:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        flash('Invalid or expired verification link.', 'error')
+        return redirect(url_for('admin_login'))
 
 @app.route('/admin/logout')
 def admin_logout():
     session.clear()
     flash('Logged out successfully.', 'info')
     return redirect(url_for('admin_login'))
-
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
@@ -243,7 +219,6 @@ def admin_dashboard():
     conn.close()
 
     return render_template('dashboard.html', incidents=incidents)
-
 
 @app.route('/admin/incident/update/<int:id>', methods=['GET', 'POST'])
 def update_incident(id):
@@ -264,7 +239,7 @@ def update_incident(id):
 
     cursor.execute("SELECT status FROM incidents WHERE id = %s", (id,))
     current_record = cursor.fetchone()
-
+    
     if current_record and current_record['status'] == 'Resolved':
         cursor.close()
         conn.close()
@@ -299,7 +274,6 @@ def update_incident(id):
     flash(f'Incident #INC-{id:04d} updated and recorded in audit logs successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
-
 @app.route('/admin/logs')
 def admin_logs():
     if not session.get('admin_logged_in'):
@@ -311,7 +285,7 @@ def admin_logs():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
+        
         cursor.execute("""
             SELECT 
                 incident_logs.incident_id AS log_id,
@@ -327,7 +301,7 @@ def admin_logs():
             LEFT JOIN incidents ON incident_logs.incident_id = incidents.id
             ORDER BY incident_logs.incident_id DESC
         """)
-
+        
         logs = cursor.fetchall()
         return render_template('logs.html', logs=logs)
 
@@ -342,7 +316,6 @@ def admin_logs():
         if conn:
             conn.close()
 
-
 @app.route('/api/unread_count')
 def unread_count():
     if not session.get('admin_logged_in'):
@@ -356,7 +329,6 @@ def unread_count():
     conn.close()
 
     return {'unread_count': result['count'] if result else 0}
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
