@@ -264,14 +264,16 @@ td {
     gap: 15px;
 }
 
-.modal-overlay.active .modal-card {
+/* CHANGED .modal-card TO .modal-content */
+.modal-overlay.active .modal-content {
     transform: scale(1);
 }
 
 .modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
-.modal-card h3 { color: var(--primary-green); font-size: 1.3rem; margin-bottom: 10px; }
-.modal-card p { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
-.modal-actions { display: flex; gap: 12px; justify-content: center; }
+
+/* CHANGED .modal-card TO .modal-content */
+.modal-content h3 { color: var(--primary-green); font-size: 1.3rem; margin-bottom: 10px; }
+.modal-content p { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
 
 .btn-secondary {
     background-color: transparent;
@@ -294,7 +296,10 @@ td {
     h2 { font-size: 1.3rem; text-align: center; }
     table { font-size: 0.85rem; }
     th, td { padding: 10px 12px; }
-    .modal-card { padding: 25px 20px; }
+    
+    /* CHANGED .modal-card TO .modal-content */
+    .modal-content { padding: 25px 20px; }
+    
     .modal-actions { flex-direction: column; }
-    .modal-actions button { width: 100%; margin-bottom: 8px; }
+    .modal-actions button, .modal-actions a { width: 100%; margin-bottom: 8px; }
 }
