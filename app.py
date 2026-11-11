@@ -4,6 +4,7 @@ import re
 import random
 import urllib.request
 import json
+import datetime
 import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 
@@ -19,7 +20,7 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-# --- ONE-TAP EMAIL VERIFICATION VIA BREVO API ---
+# --- DATABASE TOKEN-BASED ONE-TAP EMAIL VERIFICATION ---
 def send_verification_email(recipient_email, verify_link):
     api_key = os.environ.get('BREVO_API_KEY')
     sender_email = os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
@@ -129,10 +130,6 @@ def admin_login():
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
 
-    if request.method == 'GET':
-        session.pop('pending_admin', None)
-        session.pop('verify_token', None)
-
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password'].strip()
@@ -141,16 +138,22 @@ def admin_login():
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT * FROM admins WHERE username = %s AND password = %s", (username, password))
         admin = cursor.fetchone()
-        cursor.close()
-        conn.close()
 
         if admin:
             verify_token = f"{random.randint(10000000, 99999999)}"
+            # Token valid for 15 minutes, stored permanently in DB
+            expiry_time = datetime.datetime.now() + datetime.timedelta(minutes=15)
+            
+            cursor.execute("""
+                UPDATE admins SET verify_token = %s, token_expiry = %s WHERE username = %s
+            """, (verify_token, expiry_time, admin['username']))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
             session['pending_admin'] = admin['username']
-            session['verify_token'] = verify_token
             
             verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
-            
             recipient_email = admin.get('email') if admin and admin.get('email') else os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
             
             email_sent = send_verification_email(recipient_email, verify_link)
@@ -160,6 +163,8 @@ def admin_login():
             else:
                 flash('Failed to send verification email. Check Brevo API settings.', 'error')
         else:
+            cursor.close()
+            conn.close()
             flash('Invalid username or password.', 'error')
             
         return redirect(url_for('admin_login'))
@@ -168,16 +173,29 @@ def admin_login():
 
 @app.route('/admin/verify-tap/<username>/<token>')
 def verify_tap(username, token):
-    if token == session.get('verify_token') and username == session.get('pending_admin'):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
+    admin = cursor.fetchone()
+
+    if admin and admin['token_expiry'] and datetime.datetime.now() < admin['token_expiry']:
+        # Clear token so it can never be reused
+        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
         session['admin_logged_in'] = True
         session['admin_username'] = username
-        
         session.pop('pending_admin', None)
-        session.pop('verify_token', None)
         
         flash('Verification successful! Welcome to the portal.', 'success')
         return redirect(url_for('admin_dashboard'))
     else:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
         flash('Invalid or expired verification link.', 'error')
         return redirect(url_for('admin_login'))
 
