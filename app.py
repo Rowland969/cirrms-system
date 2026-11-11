@@ -173,13 +173,19 @@ def admin_login():
 
 @app.route('/admin/verify-tap/<username>/<token>')
 def verify_tap(username, token):
+
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_dashboard'))
+
+    if request.headers.get('Sec-Purpose') == 'prefetch' or request.headers.get('Purpose') == 'prefetch':
+        return '', 200
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
     admin = cursor.fetchone()
 
     if admin and admin['token_expiry'] and datetime.datetime.now() < admin['token_expiry']:
-        # Clear token so it can never be reused
         cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
         conn.commit()
         cursor.close()
@@ -196,6 +202,7 @@ def verify_tap(username, token):
             cursor.close()
         if conn:
             conn.close()
+            
         flash('Invalid or expired verification link.', 'error')
         return redirect(url_for('admin_login'))
 
