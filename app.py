@@ -225,7 +225,8 @@ def verify_tap(username, token):
 
     except Exception as e:
         print(f"CRITICAL VERIFY TAP ERROR: {str(e)}")
-        flash(f"Verification error occurred. Please try logging in again.", 'error')
+        # Temporarily display the exact error on screen so we can see what broke
+        flash(f"Debug Error: {str(e)}", 'error')
         return redirect(url_for('admin_login'))
 
     finally:
