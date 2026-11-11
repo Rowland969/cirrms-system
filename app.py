@@ -132,11 +132,15 @@ def admin_dashboard():
 
     return render_template('dashboard.html', incidents=incidents)
 
-@app.route('/admin/incident/update/<int:id>', methods=['POST'])
+@app.route('/admin/incident/update/<int:id>', methods=['GET', 'POST'])
 def update_incident(id):
     if not session.get('admin_logged_in'):
         flash('Access denied.', 'error')
         return redirect(url_for('admin_login'))
+
+    # If someone visits the URL directly via browser GET, redirect them back safely
+    if request.method == 'GET':
+        return redirect(url_for('admin_dashboard'))
 
     new_priority = request.form.get('priority')
     new_status = request.form.get('status')
@@ -161,7 +165,8 @@ def update_incident(id):
         WHERE id = %s
     """, (new_priority, new_status, action_taken, id))
 
-    cursor.execute("SELECT id FROM incident_logs WHERE incident_id = %s", (id,))
+    # Safe query using SELECT * to prevent column-not-found errors
+    cursor.execute("SELECT * FROM incident_logs WHERE incident_id = %s", (id,))
     existing_log = cursor.fetchone()
 
     if existing_log:
