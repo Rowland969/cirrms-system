@@ -213,10 +213,16 @@ def admin_dashboard():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM incidents WHERE status != 'Resolved' ORDER BY created_at DESC")
-    incidents = cursor.fetchall()
-    cursor.close()
-    conn.close()
+    try:
+        cursor.execute("SELECT * FROM incidents WHERE status != 'Resolved' ORDER BY id DESC")
+        incidents = cursor.fetchall()
+    except Exception as e:
+        print(f"Database Error on Dashboard: {e}")
+        flash(f"Database error loading dashboard: {e}", 'error')
+        incidents = []
+    finally:
+        cursor.close()
+        conn.close()
 
     return render_template('dashboard.html', incidents=incidents)
 
