@@ -140,7 +140,6 @@ def admin_login():
 
         if admin:
             verify_token = f"{random.randint(10000000, 99999999)}"
-            # Token valid for 15 minutes, stored permanently in DB
             expiry_time = datetime.datetime.now() + datetime.timedelta(minutes=15)
             
             cursor.execute("""
