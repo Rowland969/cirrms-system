@@ -40,7 +40,7 @@
                         </span>
                     </td>
                     <td style="padding: 14px; vertical-align: top;">
-                        <strong style="color: #1b4332;">{{ log.admin_user }}</strong>
+                        <strong style="color: #1b4332;">{{ log.admin_username or log.admin_user or 'admin' }}</strong>
                     </td>
                     <td style="padding: 14px; vertical-align: top;">
                         <small style="color: var(--text-muted);">{{ log.timestamp }}</small>

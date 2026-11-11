@@ -186,7 +186,7 @@ def verify_tap(token):
         conn.commit()
         
         session['admin_logged_in'] = True
-        session['admin_username'] = admin['username']  # Saves the actual username
+        session['admin_username'] = admin['username']
         
         cursor.close()
         conn.close()
@@ -229,9 +229,8 @@ def update_incident(id):
     priority = request.form.get('priority')
     status = request.form.get('status')
     action_taken = request.form.get('action_taken')
-    
-    # Capture the exact username of the logged-in admin
-    admin_username = session.get('admin_username', 'System Admin')
+
+    admin_username = session.get('admin_username') or session.get('username') or 'admin'
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -252,7 +251,7 @@ def update_incident(id):
 
         if status == 'Resolved':
             cursor.execute("""
-                INSERT INTO incident_logs (incident_id, resident_name, incident_type, location, status_updated_to, action_taken, admin_user)
+                INSERT INTO incident_logs (incident_id, resident_name, incident_type, location, status_updated_to, action_taken, admin_username)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
                 id, 
