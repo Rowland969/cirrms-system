@@ -125,6 +125,11 @@ def home():
 
     return render_template('index.html')
 
+@app.route('/admin/login/reset')
+def reset_login():
+    session.pop('pending_admin', None)
+    return redirect(url_for('admin_login'))
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if session.get('admin_logged_in'):
@@ -171,15 +176,47 @@ def admin_login():
 
     return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
 
-@app.route('/admin/verify-tap/<username>/<token>')
+@app.route('/admin/verify-tap/<username>/<token>', methods=['GET', 'POST'])
 def verify_tap(username, token):
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_dashboard'))
+
+    # Ignore automated background link-scanners
+    if request.headers.get('Sec-Purpose') == 'prefetch' or request.headers.get('Purpose') == 'prefetch':
+        return '', 200
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
     admin = cursor.fetchone()
 
-    if admin and admin['token_expiry'] and datetime.datetime.now() < admin['token_expiry']:
-        # Clear token so it can never be reused
+    is_valid = False
+    if admin and admin.get('token_expiry'):
+        expiry = admin['token_expiry']
+        if isinstance(expiry, str):
+            try:
+                expiry = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                expiry = None
+
+        current_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        if expiry and current_utc < expiry:
+            is_valid = True
+
+    if not is_valid:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        flash('Invalid or expired verification link.', 'error')
+        return redirect(url_for('admin_login'))
+
+    if request.method == 'GET':
+        cursor.close()
+        conn.close()
+        return render_template('verify_tap.html', username=username, token=token)
+
+    if request.method == 'POST':
         cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
         conn.commit()
         cursor.close()
@@ -191,13 +228,6 @@ def verify_tap(username, token):
         
         flash('Verification successful! Welcome to the portal.', 'success')
         return redirect(url_for('admin_dashboard'))
-    else:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-        flash('Invalid or expired verification link.', 'error')
-        return redirect(url_for('admin_login'))
 
 @app.route('/admin/logout')
 def admin_logout():
