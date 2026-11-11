@@ -22,47 +22,85 @@ def get_db_connection():
 
 def send_verification_email(recipient_email, verify_link):
     api_key = os.environ.get('BREVO_API_KEY')
-    sender_email = os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
-    
-    if not api_key:
-        print("WARNING: BREVO_API_KEY not set in environment variables.")
+    sender_email = os.environ.get('SENDER_EMAIL')
+    if not api_key or not sender_email:
         return False
 
-    url = "https://api.brevo.com/v3/smtp/email"
-    
     payload = {
-        "sender": {"name": "CIRRMS System", "email": sender_email},
-        "to": [{"email": recipient_email}],
-        "subject": "CIRRMS Admin Portal - One-Tap Login Verification",
-        "htmlContent": f"""
-            <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f6f5; border-radius: 8px;">
-                <h2 style="color: #1b4332;">Barangay Official Login</h2>
-                <p>Hello, you requested access to the CIRRMS Admin Portal.</p>
-                <p>Click the button below to instantly verify your identity and log in:</p>
-                <a href="{verify_link}" style="display: inline-block; padding: 12px 24px; background-color: #1b4332; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px;">Verify & Log In</a>
-                <p style="margin-top: 25px; color: #666; font-size: 0.9rem;">If you did not request this, please ignore this email.</p>
-            </div>
-        """
-    }
-
-    try:
-        req = urllib.request.Request(
-            url, 
-            data=json.dumps(payload).encode('utf-8'),
-            headers={
-                "accept": "application/json",
-                "api-key": api_key,
-                "content-type": "application/json"
-            },
-            method="POST"
+        'sender': {'email': sender_email},
+        'to': [{'email': recipient_email}],
+        'subject': 'Admin login verification',
+        'htmlContent': (
+            '<p>Click the link below to verify your admin login. '
+            'This link expires in 15 minutes.</p>'
+            f'<p><a href="{verify_link}">Verify login</a></p>'
         )
-
-        with urllib.request.urlopen(req) as response:
-            return response.status == 201  
-
-    except Exception as e:
-        print(f"Error sending email via Brevo API: {str(e)}")
+    }
+    req = urllib.request.Request(
+        'https://api.brevo.com/v3/smtp/email',
+        data=json.dumps(payload).encode('utf-8'),
+        headers={
+            'accept': 'application/json',
+            'api-key': api_key,
+            'content-type': 'application/json'
+        },
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return 200 <= response.status < 300
+    except Exception:
         return False
+
+@app.route('/admin/verify-tap/<username>/<token>', methods=['GET', 'POST'])
+def verify_tap(username, token):
+    # Bypasses check if admin is already logged in
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_dashboard'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
+    admin = cursor.fetchone()
+
+    is_valid = False
+    if admin and admin.get('token_expiry'):
+        expiry = admin['token_expiry']
+        if isinstance(expiry, str):
+            try:
+                expiry = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                expiry = None
+
+        current_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        if expiry and current_utc < expiry:
+            is_valid = True
+
+    if not is_valid:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+        flash('Invalid or expired verification link.', 'error')
+        return redirect(url_for('admin_login'))
+    
+    if request.method == 'GET':
+        cursor.close()
+        conn.close()
+        return render_template('verify_tap.html', username=username, token=token)
+
+    if request.method == 'POST':
+        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        session['admin_logged_in'] = True
+        session['admin_username'] = username
+        session.pop('pending_admin', None)
+        
+        flash('Verification successful! Welcome to the portal.', 'success')
+        return redirect(url_for('admin_dashboard'))
 
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
