@@ -146,7 +146,6 @@ def admin_login():
 
         if admin:
             verify_token = f"{random.randint(10000000, 99999999)}"
-            # Token valid for 15 minutes, stored permanently in DB
             expiry_time = datetime.datetime.now() + datetime.timedelta(minutes=15)
             
             cursor.execute("""
@@ -181,7 +180,6 @@ def verify_tap(username, token):
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
 
-    # Ignore browser background prefetching / email scanners
     if request.headers.get('Sec-Purpose') == 'prefetch' or request.headers.get('Purpose') == 'prefetch':
         return '', 200
 
@@ -305,6 +303,37 @@ def update_incident(id):
     conn.close()
 
     flash(f'Incident #INC-{id:04d} updated and recorded in audit logs successfully.', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/incident/delete/<int:id>', methods=['POST'])
+def delete_incident(id):
+    if not session.get('admin_logged_in'):
+        flash('Access denied.', 'error')
+        return redirect(url_for('admin_login'))
+
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(buffered=True)
+        
+
+        cursor.execute("DELETE FROM incident_logs WHERE incident_id = %s", (id,))      
+        cursor.execute("DELETE FROM incidents WHERE id = %s", (id,))
+        conn.commit()
+        
+        flash(f'Incident #INC-{id:04d} has been permanently removed.', 'success')
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Error deleting incident: {str(e)}")
+        flash(f'Error deleting incident: {str(e)}', 'error')
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/logs')
