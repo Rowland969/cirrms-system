@@ -111,7 +111,6 @@ def admin_login():
 
     return render_template('login.html')
 
-
 @app.route('/admin/logout')
 def admin_logout():
     session.clear()
@@ -132,7 +131,6 @@ def admin_dashboard():
     conn.close()
 
     return render_template('dashboard.html', incidents=incidents)
-
 
 @app.route('/admin/incident/update/<int:id>', methods=['POST'])
 def update_incident(id):
@@ -194,18 +192,20 @@ def admin_logs():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
-    # FIXED: Added column aliases so database columns match your HTML template variables
+    # FIXED: Perfectly bridges database column names with your HTML template variables
     cursor.execute("""
         SELECT 
             incident_logs.*, 
-            COALESCE(incident_logs.status_updated, incident_logs.status, 'Updated') AS status_updated,
-            COALESCE(incident_logs.admin_username, incident_logs.admin, incident_logs.admin_user, 'Admin') AS admin_username,
+            incident_logs.id AS log_id,
+            COALESCE(incident_logs.status_updated_to, incident_logs.status, 'Updated') AS status_updated,
+            COALESCE(incident_logs.admin_user, incident_logs.admin_username, 'Admin') AS admin_username,
+            COALESCE(incident_logs.timestamp, CURRENT_TIMESTAMP) AS logged_at,
             incidents.resident_name, 
             incidents.incident_type, 
             incidents.location
         FROM incident_logs
         JOIN incidents ON incident_logs.incident_id = incidents.id
-        ORDER BY incident_logs.log_id DESC
+        ORDER BY incident_logs.id DESC
     """)
     
     logs = cursor.fetchall()
