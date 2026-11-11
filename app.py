@@ -88,6 +88,12 @@ def home():
         description = request.form['description'].strip()
         last_submission = session.get('last_submission_time', 0)
 
+        if (is_spam(name) or is_spam(location) or is_spam(description) or 
+            contains_profanity(name) or contains_profanity(location) or contains_profanity(description)):
+            
+            flash('Submission rejected due to content policy filters.', 'error')
+            return redirect(url_for('home'))
+        
         if time.time() - last_submission < 15:
             flash('Spam protection alert: Please wait 15 seconds before submitting another incident report.', 'error')
             return redirect(url_for('home'))
