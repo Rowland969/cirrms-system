@@ -193,12 +193,19 @@ def admin_logs():
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    
+    # FIXED: Added incidents.location and matched the ID columns properly
     cursor.execute("""
-        SELECT incident_logs.*, incidents.resident_name, incidents.incident_type 
+        SELECT 
+            incident_logs.*, 
+            incidents.resident_name, 
+            incidents.incident_type, 
+            incidents.location
         FROM incident_logs
-        JOIN incidents ON incident_logs.incident_id = incidents.id
-        ORDER BY incident_logs.timestamp DESC
+        JOIN incidents ON incident_logs.incident_id = incidents.incident_id
+        ORDER BY incident_logs.logged_at DESC
     """)
+    
     logs = cursor.fetchall()
     cursor.close()
     conn.close()
