@@ -125,7 +125,6 @@ def admin_login():
     if session.get('admin_logged_in'):
         return redirect(url_for('admin_dashboard'))
 
-    # FIXED: Always clear pending verification when visiting the login page fresh
     if request.method == 'GET':
         session.pop('pending_admin', None)
         session.pop('verify_token', None)
@@ -148,13 +147,19 @@ def admin_login():
             
             verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
             
-            recipient_email = admin.get('email', os.environ.get('MAIL_USERNAME'))
+            # Safely grab email from DB, or fallback to the system MAIL_USERNAME
+            recipient_email = admin.get('email') if admin and admin.get('email') else os.environ.get('MAIL_USERNAME')
+            
+            if not recipient_email:
+                flash('Error: No email address configured for this admin account or SMTP settings.', 'error')
+                return redirect(url_for('admin_login'))
+
             email_sent = send_verification_email(recipient_email, verify_link)
             
             if email_sent:
                 flash('Credentials confirmed! Check your email and click the verification link to log in instantly.', 'success')
             else:
-                flash('Failed to send verification email. Check SMTP settings.', 'error')
+                flash('Failed to send verification email. Check Gmail App Password settings.', 'error')
         else:
             flash('Invalid username or password.', 'error')
             
