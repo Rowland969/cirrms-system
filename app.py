@@ -174,59 +174,30 @@ def admin_login():
 
     return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
 
-@app.route('/admin/verify-tap/<username>/<token>')
-def verify_tap(username, token):
-    if session.get('admin_logged_in'):
-        return redirect(url_for('admin_dashboard'))
-
-    if request.headers.get('Sec-Purpose') == 'prefetch' or request.headers.get('Purpose') == 'prefetch':
-        return '', 200
-
-    conn = None
-    cursor = None
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM admins WHERE username = %s AND verify_token = %s", (username, token))
-        admin = cursor.fetchone()
-
-        is_valid = False
-        if admin and admin.get('token_expiry'):
-            expiry = admin['token_expiry']
-            if isinstance(expiry, str):
-                try:
-                    expiry = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S')
-                except ValueError:
-                    expiry = None
-
-            current_utc = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-            if expiry and current_utc < expiry:
-                is_valid = True
-
-        if not is_valid:
-            flash('Invalid or expired verification link.', 'error')
-            return redirect(url_for('admin_login'))
-
-        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE username = %s", (username,))
+@app.route('/admin/verify/<token>')
+def verify_tap(token):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM admins WHERE verify_token = %s AND token_expiry > UTC_TIMESTAMP()", (token,))
+    admin = cursor.fetchone()
+    
+    if admin:
+        cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE id = %s", (admin['id'],))
         conn.commit()
-
+        
         session['admin_logged_in'] = True
-        session['admin_username'] = username
-        session.pop('pending_admin', None)
+        session['admin_username'] = admin['username']  # Saves the actual username
+        
+        cursor.close()
+        conn.close()
         
         flash('Verification successful! Welcome to the portal.', 'success')
         return redirect(url_for('admin_dashboard'))
-
-    except Exception as e:
-        print(f"CRITICAL VERIFY TAP ERROR: {str(e)}")
-        flash('Verification error occurred. Please try logging in again.', 'error')
-        return redirect(url_for('admin_login'))
-
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+    
+    cursor.close()
+    conn.close()
+    flash('Invalid or expired verification link.', 'error')
+    return redirect(url_for('admin_login'))
 
 @app.route('/admin/logout')
 def admin_logout():
@@ -258,7 +229,9 @@ def update_incident(id):
     priority = request.form.get('priority')
     status = request.form.get('status')
     action_taken = request.form.get('action_taken')
-    admin_username = session.get('admin_username', 'Admin')
+    
+    # Capture the exact username of the logged-in admin
+    admin_username = session.get('admin_username', 'System Admin')
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -286,11 +259,11 @@ def update_incident(id):
                 incident['resident_name'], 
                 incident['incident_type'], 
                 incident['location'], 
-                status, # Stores 'Resolved'
+                status, 
                 action_taken, 
                 admin_username
             ))
-            flash(f'Incident #INC-{id:04d} resolved and moved to audit logs!', 'success')
+            flash(f'Incident #INC-{id:04d} resolved and logged!', 'success')
         else:
             flash(f'Incident #INC-{id:04d} updated successfully!', 'success')
 
