@@ -187,35 +187,32 @@ def update_incident(id):
 
 @app.route('/admin/logs')
 def admin_logs():
-    try:
-        if not session.get('admin_logged_in'):
-            flash('Access denied.', 'error')
-            return redirect(url_for('admin_login'))
+    if not session.get('admin_logged_in'):
+        flash('Access denied.', 'error')
+        return redirect(url_for('admin_login'))
 
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        # FIXED: Changed the ORDER BY clause to use log_id instead of logged_at
-        cursor.execute("""
-            SELECT 
-                incident_logs.*, 
-                incidents.resident_name, 
-                incidents.incident_type, 
-                incidents.location
-            FROM incident_logs
-            JOIN incidents ON incident_logs.incident_id = incidents.id
-            ORDER BY incident_logs.log_id DESC
-        """)
-        
-        logs = cursor.fetchall()
-        cursor.close()
-        conn.close()
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    # FIXED: Added column aliases so database columns match your HTML template variables
+    cursor.execute("""
+        SELECT 
+            incident_logs.*, 
+            COALESCE(incident_logs.status_updated, incident_logs.status, 'Updated') AS status_updated,
+            COALESCE(incident_logs.admin_username, incident_logs.admin, incident_logs.admin_user, 'Admin') AS admin_username,
+            incidents.resident_name, 
+            incidents.incident_type, 
+            incidents.location
+        FROM incident_logs
+        JOIN incidents ON incident_logs.incident_id = incidents.id
+        ORDER BY incident_logs.log_id DESC
+    """)
+    
+    logs = cursor.fetchall()
+    cursor.close()
+    conn.close()
 
-        # Returning the normal page now!
-        return render_template('logs.html', logs=logs)
-        
-    except Exception as e:
-        return f"<div style='padding:50px; font-family:sans-serif;'><h2>System Crash Report:</h2><h3 style='color:red;'>{str(e)}</h3></div>"
+    return render_template('logs.html', logs=logs)
 
 @app.route('/api/unread_count')
 def unread_count():
