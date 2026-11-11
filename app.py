@@ -20,29 +20,30 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-# --- EMAIL OTP HELPER FUNCTION ---
-def send_otp_email(recipient_email, otp_code):
+# --- ONE-TAP EMAIL VERIFICATION SENDER ---
+def send_verification_email(recipient_email, verify_link):
     sender_email = os.environ.get('MAIL_USERNAME')
     sender_password = os.environ.get('MAIL_PASSWORD')
     
     if not sender_email or not sender_password:
-        print("WARNING: MAIL_USERNAME or MAIL_PASSWORD not set in environment variables.")
+        print("WARNING: MAIL_USERNAME or MAIL_PASSWORD not set.")
         return False
 
     try:
         msg = MIMEMultipart()
         msg['From'] = sender_email
         msg['To'] = recipient_email
-        msg['Subject'] = 'CIRRMS Admin Login - One-Time Password (OTP)'
+        msg['Subject'] = 'CIRRMS Admin Portal - One-Tap Login Verification'
 
         body = f"""
         Hello Barangay Official,
 
-        Your One-Time Password (OTP) for logging into the CIRRMS Admin Portal is:
+        You requested access to the CIRRMS Admin Portal. 
 
-        {otp_code}
+        Click the secure button/link below to instantly verify and log in:
+        {verify_link}
 
-        This code is valid for this session. Please do not share this code with anyone.
+        If you did not request this, please ignore this email.
 
         Brgy. Ilayang Butnong Incident Management System
         """
@@ -55,7 +56,7 @@ def send_otp_email(recipient_email, otp_code):
         server.quit()
         return True
     except Exception as e:
-        print(f"Error sending OTP email: {str(e)}")
+        print(f"Error sending email: {str(e)}")
         return False
 
 INAPPROPRIATE_WORDS = [
@@ -65,13 +66,10 @@ INAPPROPRIATE_WORDS = [
 ]
 
 def contains_profanity(text):
-    text_lower = text.lower()
-    return any(word in text_lower for word in INAPPROPRIATE_WORDS)
+    return any(word in text.lower() for word in INAPPROPRIATE_WORDS)
 
 def is_spam(text):
-    if re.search(r'(.)\1{4,}', text):
-        return True
-    return False
+    return bool(re.search(r'(.)\1{4,}', text))
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -91,23 +89,19 @@ def home():
             return redirect(url_for('home'))
 
         if not re.match(r'^[A-Za-z\s]+$', name):
-            flash('Full Name can only contain letters and spaces (no numbers or symbols).', 'error')
+            flash('Full Name can only contain letters and spaces.', 'error')
             return redirect(url_for('home'))
 
         if not re.match(r'^\d{11}$', contact):
-            flash('Contact Number must be exactly 11 numeric digits (no letters).', 'error')
+            flash('Contact Number must be exactly 11 numeric digits.', 'error')
             return redirect(url_for('home'))
 
         if len(description) < 10:
-            flash('Incident description is too short. Please provide at least 10 characters of detail.', 'error')
+            flash('Incident description is too short (at least 10 characters required).', 'error')
             return redirect(url_for('home'))
 
-        if is_spam(name) or is_spam(location) or is_spam(description):
-            flash('Submission rejected: Repetitive character patterns or spam detected.', 'error')
-            return redirect(url_for('home'))
-
-        if contains_profanity(name) or contains_profanity(location) or contains_profanity(description):
-            flash('Submission rejected: Inappropriate or offensive language detected.', 'error')
+        if is_spam(name) or is_spam(location) or is_spam(description) or contains_profanity(description):
+            flash('Submission rejected due to content policy filters.', 'error')
             return redirect(url_for('home'))
         
         conn = get_db_connection()
@@ -121,7 +115,7 @@ def home():
         conn.close()
 
         session['last_submission_time'] = time.time()
-        flash('Incident report submitted successfully to Barangay Ilayang Butnong!', 'success')
+        flash('Incident report submitted successfully!', 'success')
         return redirect(url_for('home'))
 
     return render_template('index.html')
@@ -143,52 +137,44 @@ def admin_login():
         conn.close()
 
         if admin:
-            # Generate 6-digit OTP
-            otp_code = f"{random.randint(100000, 999999)}"
+            # Generate secure random token for one-tap link
+            verify_token = f"{random.randint(10000000, 99999999)}"
             session['pending_admin'] = admin['username']
-            session['pending_email'] = admin.get('email', os.environ.get('MAIL_USERNAME'))
-            session['otp_code'] = otp_code
-
-            # Send OTP email
-            email_sent = send_otp_email(session['pending_email'], otp_code)
+            session['verify_token'] = verify_token
+            
+            # Generate One-Tap Verification URL
+            verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
+            
+            recipient_email = admin.get('email', os.environ.get('MAIL_USERNAME'))
+            email_sent = send_verification_email(recipient_email, verify_link)
             
             if email_sent:
-                flash('Credentials verified. Please enter the 6-digit OTP sent to your email.', 'success')
-                return redirect(url_for('verify_otp'))
+                flash('Credentials confirmed! Check your email and click the verification link to log in instantly.', 'success')
             else:
-                flash('Failed to send OTP email. Check SMTP settings.', 'error')
-                return redirect(url_for('admin_login'))
+                flash('Failed to send verification email. Check SMTP settings.', 'error')
         else:
-            flash('Invalid username or password. Please try again.', 'error')
-            return redirect(url_for('admin_login'))
-
-    return render_template('login.html')
-
-@app.route('/admin/verify-otp', methods=['GET', 'POST'])
-def verify_otp():
-    if not session.get('pending_admin'):
-        flash('Unauthorized access. Please log in first.', 'error')
+            flash('Invalid username or password.', 'error')
+            
         return redirect(url_for('admin_login'))
 
-    if request.method == 'POST':
-        entered_otp = request.form.get('otp', '').strip()
-        
-        if entered_otp == session.get('otp_code'):
-            session['admin_logged_in'] = True
-            session['admin_username'] = session.get('pending_admin')
-            
-            # Clean up temporary OTP session variables
-            session.pop('pending_admin', None)
-            session.pop('pending_email', None)
-            session.pop('otp_code', None)
-            
-            flash('Welcome back, Barangay Official!', 'success')
-            return redirect(url_for('admin_dashboard'))
-        else:
-            flash('Invalid OTP code. Please try again.', 'error')
-            return redirect(url_for('verify_otp'))
+    return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
 
-    return render_template('verify_otp.html')
+# --- ONE-TAP VERIFICATION ROUTE ---
+@app.route('/admin/verify-tap/<username>/<token>')
+def verify_tap(username, token):
+    if token == session.get('verify_token') and username == session.get('pending_admin'):
+        session['admin_logged_in'] = True
+        session['admin_username'] = username
+        
+        # Clean up temporary session tokens
+        session.pop('pending_admin', None)
+        session.pop('verify_token', None)
+        
+        flash('Verification successful! Welcome to the portal.', 'success')
+        return redirect(url_for('admin_dashboard'))
+    else:
+        flash('Invalid or expired verification link.', 'error')
+        return redirect(url_for('admin_login'))
 
 @app.route('/admin/logout')
 def admin_logout():
@@ -199,7 +185,7 @@ def admin_logout():
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if not session.get('admin_logged_in'):
-        flash('Access denied. Please log in as an administrator.', 'error')
+        flash('Access denied. Please log in.', 'error')
         return redirect(url_for('admin_login'))
 
     conn = get_db_connection()
@@ -234,7 +220,7 @@ def update_incident(id):
     if current_record and current_record['status'] == 'Resolved':
         cursor.close()
         conn.close()
-        flash('Error: This incident record is permanently locked and cannot be modified.', 'error')
+        flash('Error: This incident record is permanently locked.', 'error')
         return redirect(url_for('admin_dashboard'))
 
     cursor.execute("""
