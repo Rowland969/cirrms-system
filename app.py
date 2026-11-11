@@ -20,7 +20,6 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT', 3306))
     )
 
-# --- DATABASE TOKEN-BASED ONE-TAP EMAIL VERIFICATION ---
 def send_verification_email(recipient_email, verify_link):
     api_key = os.environ.get('BREVO_API_KEY')
     sender_email = os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
@@ -250,58 +249,59 @@ def admin_dashboard():
 
     return render_template('dashboard.html', incidents=incidents)
 
-@app.route('/admin/incident/update/<int:id>', methods=['GET', 'POST'])
+@app.route('/admin/incident/update/<int:id>', methods=['POST'])
 def update_incident(id):
     if not session.get('admin_logged_in'):
-        flash('Access denied.', 'error')
+        flash('Access denied. Please log in.', 'error')
         return redirect(url_for('admin_login'))
 
-    if request.method == 'GET':
-        return redirect(url_for('admin_dashboard'))
-
-    new_priority = request.form.get('priority')
-    new_status = request.form.get('status')
+    priority = request.form.get('priority')
+    status = request.form.get('status')
     action_taken = request.form.get('action_taken')
-    admin_user = session.get('admin_username', 'admin')
+    admin_username = session.get('admin_username', 'Admin')
 
     conn = get_db_connection()
-    cursor = conn.cursor(buffered=True, dictionary=True)
-
-    cursor.execute("SELECT status FROM incidents WHERE id = %s", (id,))
-    current_record = cursor.fetchone()
+    cursor = conn.cursor(dictionary=True)
     
-    if current_record and current_record['status'] == 'Resolved':
+    try:
+        cursor.execute("SELECT * FROM incidents WHERE id = %s", (id,))
+        incident = cursor.fetchone()
+        
+        if not incident:
+            flash(f'Incident #INC-{id:04d} not found or already deleted.', 'error')
+            return redirect(url_for('admin_dashboard'))
+
+        cursor.execute("""
+            UPDATE incidents 
+            SET priority = %s, status = %s, action_taken = %s 
+            WHERE id = %s
+        """, (priority, status, action_taken, id))
+
+        cursor.execute("""
+            INSERT INTO incident_logs (incident_id, resident_name, incident_type, location, status_updated, action_taken, admin_username)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
+            id, 
+            incident['resident_name'], 
+            incident['incident_type'], 
+            incident['location'], 
+            status, 
+            action_taken, 
+            admin_username
+        ))
+
+        conn.commit()
+        flash(f'Incident #INC-{id:04d} updated successfully!', 'success')
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Database Error on Update: {e}")
+        flash('An internal error occurred while updating the incident.', 'error')
+        
+    finally:
         cursor.close()
         conn.close()
-        flash('Error: This incident record is permanently locked.', 'error')
-        return redirect(url_for('admin_dashboard'))
 
-    cursor.execute("""
-        UPDATE incidents 
-        SET priority = %s, status = %s, action_taken = %s 
-        WHERE id = %s
-    """, (new_priority, new_status, action_taken, id))
-
-    cursor.execute("SELECT * FROM incident_logs WHERE incident_id = %s", (id,))
-    existing_log = cursor.fetchone()
-
-    if existing_log:
-        cursor.execute("""
-            UPDATE incident_logs 
-            SET action_taken = %s, status_updated_to = %s, admin_user = %s, timestamp = CURRENT_TIMESTAMP
-            WHERE incident_id = %s
-        """, (action_taken, new_status, admin_user, id))
-    else:
-        cursor.execute("""
-            INSERT INTO incident_logs (incident_id, action_taken, status_updated_to, admin_user)
-            VALUES (%s, %s, %s, %s)
-        """, (id, action_taken, new_status, admin_user))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    flash(f'Incident #INC-{id:04d} updated and recorded in audit logs successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/incident/delete/<int:id>', methods=['POST'])
