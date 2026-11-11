@@ -277,21 +277,24 @@ def update_incident(id):
             WHERE id = %s
         """, (priority, status, action_taken, id))
 
-        cursor.execute("""
-            INSERT INTO incident_logs (incident_id, resident_name, incident_type, location, status_updated, action_taken, admin_username)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            id, 
-            incident['resident_name'], 
-            incident['incident_type'], 
-            incident['location'], 
-            status, 
-            action_taken, 
-            admin_username
-        ))
+        if status == 'Resolved':
+            cursor.execute("""
+                INSERT INTO incident_logs (incident_id, resident_name, incident_type, location, status_updated_to, action_taken, admin_user)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                id, 
+                incident['resident_name'], 
+                incident['incident_type'], 
+                incident['location'], 
+                status, # Stores 'Resolved'
+                action_taken, 
+                admin_username
+            ))
+            flash(f'Incident #INC-{id:04d} resolved and moved to audit logs!', 'success')
+        else:
+            flash(f'Incident #INC-{id:04d} updated successfully!', 'success')
 
         conn.commit()
-        flash(f'Incident #INC-{id:04d} updated successfully!', 'success')
         
     except Exception as e:
         conn.rollback()
