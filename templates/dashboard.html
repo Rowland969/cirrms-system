@@ -51,14 +51,17 @@
                         <small style="color: var(--text-muted);">{{ item.location }}</small>
                     </td>
                     <td style="padding: 14px; vertical-align: top; min-width: 250px;">
-                        <select name="action_taken" form="form-{{ item.id }}" class="form-select form-select-sm mb-2" style="border-radius: 6px;">
-                            <option value="Dispatched Barangay Tanod" {% if item.action_taken == 'Dispatched Barangay Tanod' %}selected{% endif %}>Dispatched Barangay Tanod</option>
-                            <option value="Contacted Resident" {% if item.action_taken == 'Contacted Resident' %}selected{% endif %}>Contacted Resident</option>
-                            <option value="Issue Resolved on Site" {% if item.action_taken == 'Issue Resolved on Site' %}selected{% endif %}>Issue Resolved on Site</option>
-                            <option value="Under Active Monitoring" {% if item.action_taken == 'Under Active Monitoring' %}selected{% endif %}>Under Active Monitoring</option>
-                            <option value="Notice / Warning Issued" {% if item.action_taken == 'Notice / Warning Issued' %}selected{% endif %}>Notice / Warning Issued</option>
-                            <option value="Referred to Barangay Captain" {% if item.action_taken == 'Referred to Barangay Captain' %}selected{% endif %}>Referred to Barangay Captain</option>
-                        </select>
+                    <select name="action_taken" class="form-select form-select-sm" style="border-radius: 8px;">
+                        <option value="Dispatched Barangay Tanod" {% if incident.action_taken == 'Dispatched Barangay Tanod' %}selected{% endif %}>Dispatched Barangay Tanod</option>
+                        <option value="Contacted Resident" {% if incident.action_taken == 'Contacted Resident' %}selected{% endif %}>Contacted Resident</option>
+                        <option value="Contacted Local Police Station" {% if incident.action_taken == 'Contacted Local Police Station' %}selected{% endif %}>Contacted Local Police Station</option>
+                        <option value="Contacted Bureau of Fire Protection (BFP)" {% if incident.action_taken == 'Contacted Bureau of Fire Protection (BFP)' %}selected{% endif %}>Contacted Bureau of Fire Protection (BFP)</option>
+                        <option value="Contacted Emergency Unit" {% if incident.action_taken == 'Contacted Emergency Unit' %}selected{% endif %}>Contacted Emergency Unit</option>
+                        <option value="Dispatched Barangay Health Worker" {% if incident.action_taken == 'Dispatched Barangay Health Worker' %}selected{% endif %}>Dispatched Barangay Health Worker</option>
+                        <option value="Under Active Monitoring" {% if incident.action_taken == 'Under Active Monitoring' %}selected{% endif %}>Under Active Monitoring</option>
+                        <option value="Notice / Warning Issued" {% if incident.action_taken == 'Notice / Warning Issued' %}selected{% endif %}>Notice / Warning Issued</option>
+                        <option value="Referred to Barangay Captain" {% if incident.action_taken == 'Referred to Barangay Captain' %}selected{% endif %}>Referred to Barangay Captain</option>
+                    </select>
                         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <button type="submit" form="form-{{ item.id }}" class="btn btn-sm text-white fw-bold" style="background-color: #1b4332; border-radius: 6px; padding: 6px 12px; font-size: 12px;">Save & Log</button>
                             <button type="submit" form="delete-form-{{ item.id }}" class="btn btn-sm btn-outline-danger fw-bold" style="border-radius: 6px; padding: 6px 12px; font-size: 12px;" title="Delete Report">
