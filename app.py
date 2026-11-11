@@ -194,30 +194,44 @@ def admin_logs():
         flash('Access denied.', 'error')
         return redirect(url_for('admin_login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # FIXED: Perfectly bridges database column names with your HTML template variables
-    cursor.execute("""
-        SELECT 
-            incident_logs.*, 
-            incident_logs.id AS log_id,
-            COALESCE(incident_logs.status_updated_to, incident_logs.status, 'Updated') AS status_updated,
-            COALESCE(incident_logs.admin_user, incident_logs.admin_username, 'Admin') AS admin_username,
-            COALESCE(incident_logs.timestamp, CURRENT_TIMESTAMP) AS logged_at,
-            incidents.resident_name, 
-            incidents.incident_type, 
-            incidents.location
-        FROM incident_logs
-        JOIN incidents ON incident_logs.incident_id = incidents.id
-        ORDER BY incident_logs.id DESC
-    """)
-    
-    logs = cursor.fetchall()
-    cursor.close()
-    conn.close()
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Safe query using explicit column selection instead of incident_logs.* to prevent key collisions
+        cursor.execute("""
+            SELECT 
+                incident_logs.id AS log_id,
+                incident_logs.incident_id,
+                COALESCE(incident_logs.action_taken, 'No action recorded') AS action_taken,
+                COALESCE(incident_logs.status_updated_to, 'Updated') AS status_updated,
+                COALESCE(incident_logs.admin_user, 'Admin') AS admin_username,
+                COALESCE(incident_logs.timestamp, CURRENT_TIMESTAMP) AS logged_at,
+                incidents.resident_name, 
+                incidents.incident_type, 
+                incidents.location
+            FROM incident_logs
+            LEFT JOIN incidents ON incident_logs.incident_id = incidents.id
+            ORDER BY incident_logs.id DESC
+        """)
+        
+        logs = cursor.fetchall()
+        return render_template('logs.html', logs=logs)
 
-    return render_template('logs.html', logs=logs)
+    except Exception as e:
+        # If anything fails, it prints a readable error instead of crashing silently
+        print(f"CRITICAL LOGS ROUTE ERROR: {str(e)}")
+        flash(f"Database error loading logs: {str(e)}", "error")
+        return render_template('logs.html', logs=[])
+
+    finally:
+        # GUARANTEES connection cleanup so your database never leaks connections
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @app.route('/api/unread_count')
 def unread_count():
