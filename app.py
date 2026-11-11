@@ -314,44 +314,23 @@ def delete_incident(id):
 @app.route('/admin/logs')
 def admin_logs():
     if not session.get('admin_logged_in'):
-        flash('Access denied.', 'error')
+        flash('Access denied. Please log in.', 'error')
         return redirect(url_for('admin_login'))
 
-    conn = None
-    cursor = None
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        cursor.execute("""
-            SELECT 
-                incident_logs.incident_id AS log_id,
-                incident_logs.incident_id,
-                COALESCE(incident_logs.action_taken, 'No action recorded') AS action_taken,
-                COALESCE(incident_logs.status_updated_to, 'Updated') AS status_updated,
-                COALESCE(incident_logs.admin_user, 'Admin') AS admin_username,
-                COALESCE(incident_logs.timestamp, NOW()) AS logged_at,
-                incidents.resident_name, 
-                incidents.incident_type, 
-                incidents.location
-            FROM incident_logs
-            LEFT JOIN incidents ON incident_logs.incident_id = incidents.id
-            ORDER BY incident_logs.incident_id DESC
-        """)
-        
+        cursor.execute("SELECT * FROM incident_logs ORDER BY timestamp DESC")
         logs = cursor.fetchall()
-        return render_template('logs.html', logs=logs)
-
     except Exception as e:
-        print(f"CRITICAL LOGS ROUTE ERROR: {str(e)}")
-        flash(f"Database error loading logs: {str(e)}", "error")
-        return render_template('logs.html', logs=[])
-
+        print(f"Error loading logs: {e}")
+        flash(f"Database error loading logs: {e}", 'error')
+        logs = []
     finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        cursor.close()
+        conn.close()
+
+    return render_template('logs.html', logs=logs)
 
 @app.route('/api/unread_count')
 def unread_count():
