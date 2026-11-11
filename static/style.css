@@ -233,6 +233,10 @@ td {
     vertical-align: middle;
 }
 
+.incident-id {
+  white-space: nowrap;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -268,8 +272,6 @@ td {
 }
 
 .modal-icon { font-size: 2.5rem; margin-bottom: 12px; }
-
-/* CHANGED .modal-card TO .modal-content */
 .modal-content h3 { color: var(--primary-green); font-size: 1.3rem; margin-bottom: 10px; }
 .modal-content p { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 22px; line-height: 1.5; }
 
@@ -295,7 +297,6 @@ td {
     table { font-size: 0.85rem; }
     th, td { padding: 10px 12px; }
     
-    /* CHANGED .modal-card TO .modal-content */
     .modal-content { padding: 25px 20px; }
     
     .modal-actions { flex-direction: column; }
