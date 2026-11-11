@@ -11,6 +11,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY') or 'cirrms_secret_key_secure_barangay'
 
+
 def get_db_connection():
     return mysql.connector.connect(
         host=os.environ.get('DB_HOST', 'localhost'),
@@ -19,6 +20,7 @@ def get_db_connection():
         database=os.environ.get('DB_NAME', 'cirrms_db'),
         port=int(os.environ.get('DB_PORT', 3306))
     )
+
 
 def send_verification_email(recipient_email, verify_link):
     api_key = os.environ.get('BREVO_API_KEY')
@@ -52,6 +54,7 @@ def send_verification_email(recipient_email, verify_link):
     except Exception:
         return False
 
+
 @app.route('/admin/verify-tap/<username>/<token>', methods=['GET', 'POST'])
 def verify_tap(username, token):
     # Bypasses check if admin is already logged in
@@ -83,7 +86,7 @@ def verify_tap(username, token):
             conn.close()
         flash('Invalid or expired verification link.', 'error')
         return redirect(url_for('admin_login'))
-    
+
     if request.method == 'GET':
         cursor.close()
         conn.close()
@@ -98,21 +101,25 @@ def verify_tap(username, token):
         session['admin_logged_in'] = True
         session['admin_username'] = username
         session.pop('pending_admin', None)
-        
+
         flash('Verification successful! Welcome to the portal.', 'success')
         return redirect(url_for('admin_dashboard'))
 
+
 INAPPROPRIATE_WORDS = [
     'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'crap', 'dick', 'pussy', 'cunt', 'slut', 'whore', 'idiot', 'stupid',
-    'bobo', 'tanga', 'gago', 'tarantado', 'ulol', 'putangina', 'pukingina', 'tangina', 'bwisit', 
+    'bobo', 'tanga', 'gago', 'tarantado', 'ulol', 'putangina', 'pukingina', 'tangina', 'bwisit',
     'leche', 'puta', 'kantot', 'kupal', 'bayag', 'tae', 'inutil', 'hayop', 'puki', 'titi', 'tamod'
 ]
+
 
 def contains_profanity(text):
     return any(word in text.lower() for word in INAPPROPRIATE_WORDS)
 
+
 def is_spam(text):
     return bool(re.search(r'(.)\1{4,}', text))
+
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -127,12 +134,11 @@ def home():
         description = request.form['description'].strip()
         last_submission = session.get('last_submission_time', 0)
 
-        if (is_spam(name) or is_spam(location) or is_spam(description) or 
-            contains_profanity(name) or contains_profanity(location) or contains_profanity(description)):
-            
+        if (is_spam(name) or is_spam(location) or is_spam(description) or
+                contains_profanity(name) or contains_profanity(location) or contains_profanity(description)):
             flash('Submission rejected due to content policy filters.', 'error')
             return redirect(url_for('home'))
-        
+
         if time.time() - last_submission < 15:
             flash('Spam protection alert: Please wait 15 seconds before submitting another incident report.', 'error')
             return redirect(url_for('home'))
@@ -152,7 +158,7 @@ def home():
         if is_spam(name) or is_spam(location) or is_spam(description) or contains_profanity(description):
             flash('Submission rejected due to content policy filters.', 'error')
             return redirect(url_for('home'))
-        
+
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -168,6 +174,7 @@ def home():
         return redirect(url_for('home'))
 
     return render_template('index.html')
+
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -186,7 +193,7 @@ def admin_login():
         if admin:
             verify_token = f"{random.randint(10000000, 99999999)}"
             expiry_time = datetime.datetime.now() + datetime.timedelta(minutes=15)
-            
+
             cursor.execute("""
                 UPDATE admins SET verify_token = %s, token_expiry = %s WHERE username = %s
             """, (verify_token, expiry_time, admin['username']))
@@ -195,12 +202,12 @@ def admin_login():
             conn.close()
 
             session['pending_admin'] = admin['username']
-            
+
             verify_link = url_for('verify_tap', username=admin['username'], token=verify_token, _external=True)
             recipient_email = admin.get('email') if admin and admin.get('email') else os.environ.get('SENDER_EMAIL', 'calapisrowland2005@gmail.com')
-            
+
             email_sent = send_verification_email(recipient_email, verify_link)
-            
+
             if email_sent:
                 flash('Credentials confirmed! Check your email and click the verification link to log in instantly.', 'success')
             else:
@@ -209,16 +216,18 @@ def admin_login():
             cursor.close()
             conn.close()
             flash('Invalid username or password.', 'error')
-            
+
         return redirect(url_for('admin_login'))
 
     return render_template('login.html', awaiting_verification=bool(session.get('pending_admin')))
+
 
 @app.route('/admin/logout')
 def admin_logout():
     session.clear()
     flash('Logged out successfully.', 'info')
     return redirect(url_for('admin_login'))
+
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
@@ -234,6 +243,7 @@ def admin_dashboard():
     conn.close()
 
     return render_template('dashboard.html', incidents=incidents)
+
 
 @app.route('/admin/incident/update/<int:id>', methods=['GET', 'POST'])
 def update_incident(id):
@@ -254,7 +264,7 @@ def update_incident(id):
 
     cursor.execute("SELECT status FROM incidents WHERE id = %s", (id,))
     current_record = cursor.fetchone()
-    
+
     if current_record and current_record['status'] == 'Resolved':
         cursor.close()
         conn.close()
@@ -289,6 +299,7 @@ def update_incident(id):
     flash(f'Incident #INC-{id:04d} updated and recorded in audit logs successfully.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+
 @app.route('/admin/logs')
 def admin_logs():
     if not session.get('admin_logged_in'):
@@ -300,7 +311,7 @@ def admin_logs():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        
+
         cursor.execute("""
             SELECT 
                 incident_logs.incident_id AS log_id,
@@ -316,7 +327,7 @@ def admin_logs():
             LEFT JOIN incidents ON incident_logs.incident_id = incidents.id
             ORDER BY incident_logs.incident_id DESC
         """)
-        
+
         logs = cursor.fetchall()
         return render_template('logs.html', logs=logs)
 
@@ -331,6 +342,7 @@ def admin_logs():
         if conn:
             conn.close()
 
+
 @app.route('/api/unread_count')
 def unread_count():
     if not session.get('admin_logged_in'):
@@ -344,6 +356,7 @@ def unread_count():
     conn.close()
 
     return {'unread_count': result['count'] if result else 0}
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
