@@ -192,17 +192,15 @@
         const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
         let formToSubmit = null;
 
-        // 1. Intercept all form submissions (the "Save & Log" buttons)
         const forms = document.querySelectorAll('form');
         forms.forEach(form => {
             form.addEventListener('submit', function(e) {
-                e.preventDefault(); // Stop the form from submitting instantly
-                formToSubmit = this; // Remember which specific row's form was clicked
-                updateModal.style.display = 'flex'; // Show the confirmation modal
+                e.preventDefault();
+                formToSubmit = this;
+                updateModal.style.display = 'flex';
             });
         });
 
-        // 2. Hide modal if Cancel is clicked
         if (cancelUpdate) {
             cancelUpdate.addEventListener('click', function() {
                 updateModal.style.display = 'none';
@@ -210,7 +208,6 @@
             });
         }
 
-        // 3. Submit the data to the database if Confirm is clicked
         if (confirmUpdateBtn) {
             confirmUpdateBtn.addEventListener('click', function() {
                 if (formToSubmit) {
@@ -219,7 +216,6 @@
             });
         }
         
-        // 4. Hide modal if admin clicks outside the white box
         window.addEventListener('click', function(e) {
             if (e.target === updateModal) {
                 updateModal.style.display = 'none';

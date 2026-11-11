@@ -4,7 +4,6 @@
     <h2>Security Verification</h2>
     <p style="margin-bottom: 25px; color: var(--text-muted);">Please enter the 6-digit verification code sent to your administrator email.</p>
 
-    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}

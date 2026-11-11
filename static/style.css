@@ -233,7 +233,6 @@ td {
     vertical-align: middle;
 }
 
-/* --- MODAL POP-UP STYLES --- */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -264,7 +263,6 @@ td {
     gap: 15px;
 }
 
-/* CHANGED .modal-card TO .modal-content */
 .modal-overlay.active .modal-content {
     transform: scale(1);
 }

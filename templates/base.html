@@ -120,12 +120,10 @@
                 logoutModal.style.display = 'flex';
             });
 
-            // Hide modal when Cancel is clicked
             cancelLogout.addEventListener('click', function() {
                 logoutModal.style.display = 'none';
             });
 
-            // Hide modal if admin clicks outside the white box
             window.addEventListener('click', function(e) {
                 if (e.target === logoutModal) {
                     logoutModal.style.display = 'none';
