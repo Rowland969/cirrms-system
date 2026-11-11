@@ -187,30 +187,36 @@ def update_incident(id):
 
 @app.route('/admin/logs')
 def admin_logs():
-    if not session.get('admin_logged_in'):
-        flash('Access denied.', 'error')
-        return redirect(url_for('admin_login'))
+    try:
+        if not session.get('admin_logged_in'):
+            flash('Access denied.', 'error')
+            return redirect(url_for('admin_login'))
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # FIXED: Added incidents.location and matched the ID columns properly
-    cursor.execute("""
-        SELECT 
-            incident_logs.*, 
-            incidents.resident_name, 
-            incidents.incident_type, 
-            incidents.location
-        FROM incident_logs
-        JOIN incidents ON incident_logs.incident_id = incidents.incident_id
-        ORDER BY incident_logs.logged_at DESC
-    """)
-    
-    logs = cursor.fetchall()
-    cursor.close()
-    conn.close()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Swapped incidents.incident_id back to incidents.id 
+        # in case that was the column name mismatch causing the crash
+        cursor.execute("""
+            SELECT 
+                incident_logs.*, 
+                incidents.resident_name, 
+                incidents.incident_type, 
+                incidents.location
+            FROM incident_logs
+            JOIN incidents ON incident_logs.incident_id = incidents.id
+            ORDER BY incident_logs.logged_at DESC
+        """)
+        
+        logs = cursor.fetchall()
+        cursor.close()
+        conn.close()
 
-    return render_template('logs.html', logs=logs)
+        return render_template('logs.html', logs=logs)
+    
+    except Exception as e:
+        # If the database or template crashes, this prints the exact reason
+        return f"<div style='padding:50px; font-family:sans-serif;'><h2>System Crash Report:</h2><h3 style='color:red;'>{str(e)}</h3></div>"
 
 @app.route('/api/unread_count')
 def unread_count():
