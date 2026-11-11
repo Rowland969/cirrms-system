@@ -94,14 +94,49 @@
         
         <div class="modal-actions">
             <button type="button" id="cancelUpdate" class="btn btn-secondary" style="border-radius: 20px;">Cancel</button>
-            <!-- Make sure this button connects to your form submission -->
             <button type="button" id="confirmUpdateBtn" class="btn" style="background-color: #d4af37; color: black; font-weight: bold; border-radius: 20px;">Confirm & Save</button>
         </div>
     </div>
 </div>
 
 <script>
-    let activeForm = null;
+    document.addEventListener('DOMContentLoaded', function() {
+        const updateModal = document.getElementById('updateModal');
+        const cancelUpdate = document.getElementById('cancelUpdate');
+        const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
+        let formToSubmit = null;
+
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); 
+                formToSubmit = this; 
+                updateModal.style.display = 'flex'; 
+            });
+        });
+
+        if (cancelUpdate) {
+            cancelUpdate.addEventListener('click', function() {
+                updateModal.style.display = 'none';
+                formToSubmit = null; 
+            });
+        }
+
+        if (confirmUpdateBtn) {
+            confirmUpdateBtn.addEventListener('click', function() {
+                if (formToSubmit) {
+                    formToSubmit.submit(); 
+                }
+            });
+        }
+        
+        window.addEventListener('click', function(e) {
+            if (e.target === updateModal) {
+                updateModal.style.display = 'none';
+                formToSubmit = null;
+            }
+        });
+    });
 
     const modal = document.getElementById('confirmModal');
     const modalIcon = document.getElementById('modalIcon');
@@ -150,5 +185,48 @@
             activeForm = null;
         }
     });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const updateModal = document.getElementById('updateModal');
+        const cancelUpdate = document.getElementById('cancelUpdate');
+        const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
+        let formToSubmit = null;
+
+        // 1. Intercept all form submissions (the "Save & Log" buttons)
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Stop the form from submitting instantly
+                formToSubmit = this; // Remember which specific row's form was clicked
+                updateModal.style.display = 'flex'; // Show the confirmation modal
+            });
+        });
+
+        // 2. Hide modal if Cancel is clicked
+        if (cancelUpdate) {
+            cancelUpdate.addEventListener('click', function() {
+                updateModal.style.display = 'none';
+                formToSubmit = null; // Clear the saved form
+            });
+        }
+
+        // 3. Submit the data to the database if Confirm is clicked
+        if (confirmUpdateBtn) {
+            confirmUpdateBtn.addEventListener('click', function() {
+                if (formToSubmit) {
+                    formToSubmit.submit(); // Execute the actual database update
+                }
+            });
+        }
+        
+        // 4. Hide modal if admin clicks outside the white box
+        window.addEventListener('click', function(e) {
+            if (e.target === updateModal) {
+                updateModal.style.display = 'none';
+                formToSubmit = null;
+            }
+        });
+    });
 </script>
+
 {% endblock %}
