@@ -1,234 +1,150 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="card">
-    <h2>Barangay Incident Management Portal</h2>
-    <p style="margin-bottom: 20px; color: var(--text-muted);">Manage resident reports and record official barangay responses.</p>
+<div class="card shadow-sm border-0 p-4" style="border-radius: 16px;">
+    <h2 class="fw-bold mb-1" style="color: #1b4332;">Barangay Incident Management Portal</h2>
+    <p style="margin-bottom: 24px; color: var(--text-muted);">Manage resident reports and record official barangay responses.</p>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Incident Number</th>
-                <th>Resident Name & Contact</th>
-                <th>Incident Type & Location</th>
-                <th>Description</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Action & Response Notes</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in incidents %}
-<td>
-                    <strong style="color: var(--accent-gold);">#INC-{{ "%04d" % item.id }}</strong>
-                    {% if item.status != 'Resolved' %}
-                    <form id="form-{{ item.id }}" class="update-incident-form" action="{{ url_for('update_incident', id=item.id) }}" method="POST" data-inc-no="#INC-{{ '%04d' % item.id }}"></form>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr style="background-color: #1b4332; color: white;">
+                    <th style="padding: 14px; border-top-left-radius: 8px;">Incident Number</th>
+                    <th style="padding: 14px;">Resident Name & Contact</th>
+                    <th style="padding: 14px;">Incident Type & Location</th>
+                    <th style="padding: 14px; max-width: 250px;">Description</th>
+                    <th style="padding: 14px;">Priority</th>
+                    <th style="padding: 14px;">Status</th>
+                    <th style="padding: 14px; border-top-right-radius: 8px;">Action & Response Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in incidents %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 14px; vertical-align: top;">
+                        <strong style="color: var(--accent-gold); font-size: 1.05rem;">#INC-{{ "%04d" % item.id }}</strong>
+                        {% if item.status != 'Resolved' %}
+                        <form id="form-{{ item.id }}" class="update-incident-form" action="{{ url_for('update_incident', id=item.id) }}" method="POST" data-inc-no="#INC-{{ '%04d' % item.id }}"></form>
+                        {% endif %}
+                        <div style="margin-top: 8px;">
+                            <form action="{{ url_for('delete_incident', id=item.id) }}" method="POST" class="d-inline delete-incident-form" data-confirm-message="Are you sure you want to permanently delete Incident #INC-{{ '%04d' % item.id }}?">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" style="padding: 2px 8px; font-size: 11px; border-radius: 4px;" title="Delete Report">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top;">
+                        <strong class="d-block text-dark">{{ item.resident_name }}</strong>
+                        <small style="color: var(--text-muted);">{{ item.contact_number }}</small>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top;">
+                        <strong class="d-block" style="color: #1b4332;">{{ item.incident_type }}</strong>
+                        <small class="text-muted">{{ item.location }}</small>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top; max-width: 250px;">
+                        <p style="font-size: 13px; margin-bottom: 0; word-break: break-word;">{{ item.description }}</p>
+                    </td>
+                    
+                    {% if item.status == 'Resolved' %}
+                    <td style="padding: 14px; vertical-align: top;">
+                        <span style="font-weight: 600; font-size: 0.95rem;" class="text-dark">{{ item.priority }}</span>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top;">
+                        <span style="background-color: rgba(40, 167, 69, 0.15); color: #28a745; border: 1px solid #28a745; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; display: inline-block; white-space: nowrap;">
+                            Resolved
+                        </span>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top;">
+                        <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-main);">
+                            {{ item.action_taken or 'Issue Resolved' }}
+                        </p>
+                        <div style="background-color: #e9ecef; color: #6c757d; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-align: center; display: inline-block; width: 100%;">
+                            🔒 Record Locked
+                        </div>
+                    </td>
+                    {% else %}
+                    <td style="padding: 14px; vertical-align: top;">
+                        <select name="priority" form="form-{{ item.id }}" class="form-select form-select-sm" style="border-radius: 6px;">
+                            <option value="Low" {% if item.priority == 'Low' %}selected{% endif %}>Low</option>
+                            <option value="Normal" {% if item.priority == 'Normal' %}selected{% endif %}>Normal</option>
+                            <option value="High" {% if item.priority == 'High' %}selected{% endif %}>High</option>
+                            <option value="Urgent" {% if item.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
+                        </select>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top;">
+                        <select name="status" class="form-select form-select-sm status-select" form="form-{{ item.id }}" style="border-radius: 6px;">
+                            <option value="Pending" {% if item.status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="In Progress" {% if item.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Resolved" {% if item.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                        </select>
+                    </td>
+                    <td style="padding: 14px; vertical-align: top;">
+                        <select name="action_taken" form="form-{{ item.id }}" class="form-select form-select-sm mb-2" style="border-radius: 6px;">
+                            <option value="Dispatched Barangay Tanod" {% if item.action_taken == 'Dispatched Barangay Tanod' %}selected{% endif %}>Dispatched Barangay Tanod</option>
+                            <option value="Contacted Resident" {% if item.action_taken == 'Contacted Resident' %}selected{% endif %}>Contacted Resident</option>
+                            <option value="Issue Resolved on Site" {% if item.action_taken == 'Issue Resolved on Site' %}selected{% endif %}>Issue Resolved on Site</option>
+                            <option value="Under Active Monitoring" {% if item.action_taken == 'Under Active Monitoring' %}selected{% endif %}>Under Active Monitoring</option>
+                            <option value="Notice / Warning Issued" {% if item.action_taken == 'Notice / Warning Issued' %}selected{% endif %}>Notice / Warning Issued</option>
+                            <option value="Referred to Barangay Captain" {% if item.action_taken == 'Referred to Barangay Captain' %}selected{% endif %}>Referred to Barangay Captain</option>
+                        </select>
+                        <button type="submit" form="form-{{ item.id }}" class="btn btn-sm text-white w-100 fw-bold" style="background-color: #1b4332; border-radius: 6px; padding: 6px 12px; font-size: 13px;">Save & Log</button>
+                    </td>
                     {% endif %}
-                    <div style="margin-top: 6px;">
-                        <form action="{{ url_for('delete_incident', id=item.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this incident?');">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" style="padding: 2px 8px; font-size: 11px; border-radius: 4px;" title="Delete Report">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </form>
-                    </div>
-                </td>
-                <td>
-                    <strong>{{ item.resident_name }}</strong><br>
-                    <small style="color: var(--text-muted);">{{ item.contact_number }}</small>
-                </td>
-                <td>
-                    <strong style="color: var(--primary-green);">{{ item.incident_type }}</strong><br>
-                    <small>{{ item.location }}</small>
-                </td>
-                <td>
-                    <p style="font-size: 13px;">{{ item.description }}</p>
-                </td>
-                {% if item.status == 'Resolved' %}
-                <td>
-                    <span style="font-weight: 600; font-size: 0.95rem;">{{ item.priority }}</span>
-                </td>
-                <td>
-                    <span style="background-color: rgba(40, 167, 69, 0.15); color: #28a745; border: 1px solid #28a745; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">
-                        Resolved
-                    </span>
-                </td>
-                <td>
-                    <p style="font-size: 0.9rem; font-weight: 500; margin-bottom: 6px; color: var(--text-main);">
-                        {{ item.action_taken or 'Issue Resolved' }}
-                    </p>
-                    <div style="background-color: var(--input-border); color: var(--text-muted); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-align: center;">
-                        🔒 Record Locked
-                    </div>
-                </td>
-                {% else %}
-                <td>
-                    <select name="priority" form="form-{{ item.id }}">
-                        <option value="Low" {% if item.priority == 'Low' %}selected{% endif %}>Low</option>
-                        <option value="Normal" {% if item.priority == 'Normal' %}selected{% endif %}>Normal</option>
-                        <option value="High" {% if item.priority == 'High' %}selected{% endif %}>High</option>
-                        <option value="Urgent" {% if item.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
-                    </select>
-                </td>
-                <td>
-                    <select name="status" class="status-select" form="form-{{ item.id }}">
-                        <option value="Pending" {% if item.status == 'Pending' %}selected{% endif %}>Pending</option>
-                        <option value="In Progress" {% if item.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                        <option value="Resolved" {% if item.status == 'Resolved' %}selected{% endif %}>Resolved</option>
-                    </select>
-                </td>
-                <td>
-                    <select name="action_taken" form="form-{{ item.id }}" style="margin-bottom: 8px;">
-                        <option value="Dispatched Barangay Tanod" {% if item.action_taken == 'Dispatched Barangay Tanod' %}selected{% endif %}>Dispatched Barangay Tanod</option>
-                        <option value="Contacted Resident" {% if item.action_taken == 'Contacted Resident' %}selected{% endif %}>Contacted Resident</option>
-                        <option value="Issue Resolved on Site" {% if item.action_taken == 'Issue Resolved on Site' %}selected{% endif %}>Issue Resolved on Site</option>
-                        <option value="Under Active Monitoring" {% if item.action_taken == 'Under Active Monitoring' %}selected{% endif %}>Under Active Monitoring</option>
-                        <option value="Notice / Warning Issued" {% if item.action_taken == 'Notice / Warning Issued' %}selected{% endif %}>Notice / Warning Issued</option>
-                        <option value="Referred to Barangay Captain" {% if item.action_taken == 'Referred to Barangay Captain' %}selected{% endif %}>Referred to Barangay Captain</option>
-                    </select>
-                    <button type="submit" form="form-{{ item.id }}" class="btn" style="padding: 6px 12px; font-size: 13px; width: 100%;">Save & Log</button>
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<div id="updateModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <h3>Confirm Update</h3>
-        <p>Are you sure you want to save this incident update?</p>
-        
-        <div class="modal-actions">
-            <button type="button" id="cancelUpdate" class="btn btn-secondary" style="border-radius: 20px;">Cancel</button>
-            <button type="button" id="confirmUpdateBtn" class="btn" style="background-color: #d4af37; color: black; font-weight: bold; border-radius: 20px;">Confirm & Save</button>
-        </div>
-    </div>
+<div id="updateModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1050;">
+    <div class="modal-content bg-white p-4 rounded shadow-lg text-center" style="max-width: 400px; width: 90%;">
+        <h3 class="fw-bold mb-2" style="color: #1b4332;">Confirm Update</h3>
+        <p class="text-muted mb-4">Are you sure you want to save this incident update?</p>
+        <div class="d-flex gap-2 justify-content-center">
+            <button type="button" id="cancelUpdate" class="btn btn-secondary px-4" style="border-radius: 20px;">Cancel</button>
+            <button type="button" id="confirmUpdateBtn" class="btn px-4" style="background-color: #d4af37; color: black; font-weight: bold; border-radius: 20px;">Confirm & Save</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const updateModal = document.getElementById('updateModal');
-        const cancelUpdate = document.getElementById('cancelUpdate');
-        const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
-        let formToSubmit = null;
+    document.addEventListener('DOMContentLoaded', function() {
+        const updateModal = document.getElementById('updateModal');
+        const cancelUpdate = document.getElementById('cancelUpdate');
+        const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
+        let formToSubmit = null;
 
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault(); 
-                formToSubmit = this; 
-                updateModal.style.display = 'flex'; 
-            });
-        });
+        const forms = document.querySelectorAll('.update-incident-form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); 
+                formToSubmit = this; 
+                updateModal.style.display = 'flex'; 
+            });
+        });
 
-        if (cancelUpdate) {
-            cancelUpdate.addEventListener('click', function() {
-                updateModal.style.display = 'none';
-                formToSubmit = null; 
-            });
-        }
+        if (cancelUpdate) {
+            cancelUpdate.addEventListener('click', function() {
+                updateModal.style.display = 'none';
+                formToSubmit = null; 
+            });
+        }
 
-        if (confirmUpdateBtn) {
-            confirmUpdateBtn.addEventListener('click', function() {
-                if (formToSubmit) {
-                    formToSubmit.submit(); 
-                }
-            });
-        }
-        
-        window.addEventListener('click', function(e) {
-            if (e.target === updateModal) {
-                updateModal.style.display = 'none';
-                formToSubmit = null;
-            }
-        });
-    });
-
-    const modal = document.getElementById('confirmModal');
-    const modalIcon = document.getElementById('modalIcon');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalMessage = document.getElementById('modalMessage');
-    const cancelBtn = document.getElementById('cancelModalBtn');
-    const confirmBtn = document.getElementById('confirmModalBtn');
-
-    document.querySelectorAll('.update-incident-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            activeForm = this;
-
-            const incNo = this.getAttribute('data-inc-no');
-            const selectedStatus = this.elements['status'] ? this.elements['status'].value : '';
-
-            if (selectedStatus === 'Resolved') {
-                modalIcon.textContent = '🔒';
-                modalTitle.textContent = `Permanently Resolve ${incNo}?`;
-                modalMessage.textContent = `Warning: Setting status to 'Resolved' will lock ${incNo} permanently. You will not be able to edit this record again.`;
-            } else {
-                modalIcon.textContent = '📝';
-                modalTitle.textContent = `Update ${incNo}?`;
-                modalMessage.textContent = `Are you sure you want to log these changes for ${incNo}?`;
-            }
-
-            modal.classList.add('active');
-        });
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        modal.classList.remove('active');
-        activeForm = null;
-    });
-
-    confirmBtn.addEventListener('click', () => {
-        if (activeForm) {
-            modal.classList.remove('active');
-            activeForm.submit();
-        }
-    });
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-            activeForm = null;
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const updateModal = document.getElementById('updateModal');
-        const cancelUpdate = document.getElementById('cancelUpdate');
-        const confirmUpdateBtn = document.getElementById('confirmUpdateBtn');
-        let formToSubmit = null;
-
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                formToSubmit = this;
-                updateModal.style.display = 'flex';
-            });
-        });
-
-        if (cancelUpdate) {
-            cancelUpdate.addEventListener('click', function() {
-                updateModal.style.display = 'none';
-                formToSubmit = null;
-            });
-        }
-
-        if (confirmUpdateBtn) {
-            confirmUpdateBtn.addEventListener('click', function() {
-                if (formToSubmit) {
-                    formToSubmit.submit();
-                }
-            });
-        }
-        
-        window.addEventListener('click', function(e) {
-            if (e.target === updateModal) {
-                updateModal.style.display = 'none';
-                formToSubmit = null;
-            }
-        });
-    });
+        if (confirmUpdateBtn) {
+            confirmUpdateBtn.addEventListener('click', function() {
+                if (formToSubmit) {
+                    formToSubmit.submit(); 
+                }
+            });
+        }
+        
+        window.addEventListener('click', function(e) {
+            if (e.target === updateModal) {
+                updateModal.style.display = 'none';
+                formToSubmit = null;
+            }
+        });
+    });
 </script>
-
 {% endblock %}
