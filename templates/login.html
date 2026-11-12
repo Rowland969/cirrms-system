@@ -1,38 +1,36 @@
 {% extends 'base.html' %}
-
-<div class="row justify-content-center align-items-center" style="min-height: 75vh; margin: 0;">
-    <div class="col-12 col-md-8 col-lg-5 d-flex justify-content-center">   
-        <div class="card shadow-sm border-0 p-4 w-100" style="border-radius: 16px; max-width: 420px; background-color: white;">
-            <div class="text-center mb-4">
-                <h3 class="fw-bold mb-1" style="color: #1b4332;">Admin Portal Login</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">Barangay Ilayang Butnong Management System</p>
-            </div>
-            
-            <form action="{{ url_for('admin_login') }}" method="POST">
-                <div class="mb-3">
-                    <label for="username" class="form-label fw-semibold" style="color: #1b4332; font-size: 14px;">Username</label>
-                    <input type="text" class="form-control" id="username" name="username" required style="border-radius: 8px; padding: 10px;">
-                </div>
-                
-                <div class="mb-4">
-                    <label for="password" class="form-label fw-semibold" style="color: #1b4332; font-size: 14px;">Password</label>
-                    <input type="password" class="form-control" id="password" name="password" required style="border-radius: 8px; padding: 10px;">
-                </div>
-                
-                <div class="d-grid mt-2">
-                    <button type="submit" class="btn text-white fw-bold py-2" style="background-color: #1b4332; border-radius: 8px; font-size: 15px;">
-                        Sign In
-                    </button>
-                </div>
-            </form>
+{% block content %}
+<div class="login-page-wrapper">
+    <div class="card shadow-sm border-0 p-4" style="border-radius: 16px; width: 100%; max-width: 420px; background-color: white;">
+        <div class="text-center mb-4">
+            <h3 class="fw-bold mb-1" style="color: #1b4332;">Admin Portal Login</h3>
+            <p style="color: #6c757d; font-size: 14px; margin-bottom: 0;">Barangay Ilayang Butnong Management System</p>
         </div>
         
+        <form action="{{ url_for('admin_login') }}" method="POST">
+            <div class="mb-3">
+                <label for="username" class="form-label fw-semibold" style="color: #1b4332; font-size: 14px;">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required style="border-radius: 8px; padding: 10px;">
+            </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label fw-semibold" style="color: #1b4332; font-size: 14px;">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required style="border-radius: 8px; padding: 10px;">
+            </div>
+            
+            <div class="d-grid mt-2">
+                <button type="submit" class="btn text-white fw-bold py-2" style="background-color: #1b4332; border-radius: 8px; font-size: 15px;">
+                    Sign In
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 {% if session.get('pending_admin') %}
+<!-- Centered Modal Popup Overlay -->
 <div class="modal fade show" id="verifyModal" tabindex="-1" style="display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;" aria-modal="true" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px; width: 100%; margin: auto;">
+    <div class="modal-dialog modal-dialog-centered w-100" style="max-width: 400px; margin: auto;">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; padding: 20px;">
             <div class="modal-header border-0 pb-0 justify-content-center">
                 <h5 class="modal-title fw-bold text-center" style="color: #1b4332;">
@@ -42,7 +40,7 @@
             <div class="modal-body text-center py-4">
                 <p class="text-muted mb-3" style="font-size: 14px;">
                     Credentials confirmed for <strong>{{ session.get('pending_admin') }}</strong>. Click below to open your Gmail inbox and complete verification:
-                </p>                
+                </p>
                 <a href="https://mail.google.com" target="_blank" class="btn text-white fw-bold px-4 py-2 shadow-sm" style="background-color: #1b4332; border-radius: 24px; font-size: 15px;">
                     <i class="bi bi-google me-2"></i> Open Gmail
                 </a>
