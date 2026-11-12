@@ -23,16 +23,18 @@
         </nav>
     </header>
 
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+    <div class="main-center-wrapper">
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
 
-        {% block content %}{% endblock %}
+            {% block content %}{% endblock %}
+        </div>
     </div>
 
     <audio id="notification-sound" preload="auto">
@@ -113,7 +115,6 @@
         const cancelLogout = document.getElementById('cancelLogout');
 
         if (logoutBtn && logoutModal) {
-            // Show modal when Logout link is clicked
             logoutBtn.addEventListener('click', function(e) {
                 e.preventDefault(); 
                 logoutModal.style.display = 'flex';
@@ -128,8 +129,6 @@
                     logoutModal.style.display = 'none';
                 }
             });
-        } else {
-            console.log("Modal error: Cannot find button or modal in HTML.");
         }
     });
 </script>

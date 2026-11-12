@@ -1,10 +1,7 @@
 {% extends 'base.html' %}
-{% block content %}
-<!-- Use a row to break out of base container constraints and center properly -->
+
 <div class="row justify-content-center align-items-center" style="min-height: 75vh; margin: 0;">
-    <div class="col-12 col-md-8 col-lg-5 d-flex justify-content-center">
-        
-        <!-- The Login Card -->
+    <div class="col-12 col-md-8 col-lg-5 d-flex justify-content-center">   
         <div class="card shadow-sm border-0 p-4 w-100" style="border-radius: 16px; max-width: 420px; background-color: white;">
             <div class="text-center mb-4">
                 <h3 class="fw-bold mb-1" style="color: #1b4332;">Admin Portal Login</h3>
@@ -34,7 +31,6 @@
 </div>
 
 {% if session.get('pending_admin') %}
-<!-- Centered Modal Popup Overlay -->
 <div class="modal fade show" id="verifyModal" tabindex="-1" style="display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1050;" aria-modal="true" role="dialog">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 400px; width: 100%; margin: auto;">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; padding: 20px;">
@@ -46,8 +42,7 @@
             <div class="modal-body text-center py-4">
                 <p class="text-muted mb-3" style="font-size: 14px;">
                     Credentials confirmed for <strong>{{ session.get('pending_admin') }}</strong>. Click below to open your Gmail inbox and complete verification:
-                </p>
-                <!-- Direct Gmail web link -->
+                </p>                
                 <a href="https://mail.google.com" target="_blank" class="btn text-white fw-bold px-4 py-2 shadow-sm" style="background-color: #1b4332; border-radius: 24px; font-size: 15px;">
                     <i class="bi bi-google me-2"></i> Open Gmail
                 </a>
