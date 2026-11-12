@@ -185,17 +185,24 @@ def verify_tap(token):
         cursor.execute("UPDATE admins SET verify_token = NULL, token_expiry = NULL WHERE id = %s", (admin['id'],))
         conn.commit()
         
+        session.clear()
         session['admin_logged_in'] = True
         session['admin_username'] = admin['username']
         
         cursor.close()
         conn.close()
         
+        session.pop('_flashes', None)
         flash('Verification successful! Welcome to the portal.', 'success')
         return redirect(url_for('admin_dashboard'))
     
     cursor.close()
     conn.close()
+    
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_dashboard'))
+
+    session.pop('_flashes', None)
     flash('Invalid or expired verification link.', 'error')
     return redirect(url_for('admin_login'))
 
