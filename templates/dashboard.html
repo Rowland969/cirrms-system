@@ -37,7 +37,7 @@
                     <td style="padding: 14px; vertical-align: top; max-width: 200px;">
                         <span style="font-size: 13px; color: var(--text-main, #212529); font-weight: 500;">{{ incident.description }}</span>
                     </td>
-                    <td style="padding: 14px; vertical-align: top;">
+                    <td style="padding: 15px; vertical-align: top;">
                         <select name="priority" form="form-{{ incident.id }}" class="form-select form-select-sm" style="border-radius: 8px;">
                             <option value="" disabled selected hidden>Select Priority</option>
                             <option value="Normal" {% if incident.priority == 'Normal' %}selected{% endif %}>Normal</option>
@@ -45,7 +45,7 @@
                             <option value="High" {% if incident.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
                         </select>
                     </td>
-                    <td style="padding: 14px; vertical-align: top;">
+                    <td style="padding: 15px; vertical-align: top;">
                         <select name="status" form="form-{{ incident.id }}" class="form-select form-select-sm" style="border-radius: 8px;">
                             <option value="Pending" {% if incident.status == 'Pending' %}selected{% endif %}>Pending</option>
                             <option value="In Progress" {% if incident.status == 'In Progress' %}selected{% endif %}>In Progress</option>
