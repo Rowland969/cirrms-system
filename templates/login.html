@@ -1,9 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row justify-content-center">
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 75vh;">
     <div class="col-md-5">
-        <div class="card shadow-sm border-0 p-4" style="border-radius: 16px;">
-            <h2 class="fw-bold mb-3" style="color: #1b4332; text-align: center;">Admin Portal Login</h2>
+        <div class="card shadow-lg border-0 p-4" style="border-radius: 16px;">
+            <div class="text-center mb-3">
+                <i class="bi bi-shield-lock-fill" style="font-size: 40px; color: #1b4332;"></i>
+                <h3 class="fw-bold mt-2" style="color: #1b4332;">Admin Portal Login</h3>
+                <p class="text-muted" style="font-size: 14px;">Barangay Ilayang Butnong Management System</p>
+            </div>
             
             <form action="{{ url_for('admin_login') }}" method="POST">
                 <div class="mb-3">
@@ -14,13 +18,25 @@
                 <div class="mb-4">
                     <label for="password" class="form-label fw-semibold" style="color: #1b4332;">Password</label>
                     <input type="password" class="form-control" id="password" name="password" required style="border-radius: 8px; padding: 10px;">
-                </div>            
+                </div>
+                
                 <div class="d-grid mt-4">
                     <button type="submit" class="btn text-white fw-bold py-2" style="background-color: #1b4332; border-radius: 8px; font-size: 16px;">
                         Sign In
                     </button>
                 </div>
             </form>
+
+            {% if session.get('pending_admin') %}
+            <!-- One-Tap Verification Modal Trigger / Banner -->
+            <div class="alert alert-success mt-4 text-center" style="border-radius: 12px;" role="alert">
+                <h6 class="fw-bold mb-1"><i class="bi bi-envelope-check"></i> Verification Link Sent!</h6>
+                <p style="font-size: 13px;" class="mb-2">Click your One-Tap login link below to proceed:</p>
+                <a href="{{ url_for('verify_tap', token=session.get('pending_token', '#')) }}" class="btn btn-sm btn-success fw-bold px-3" style="border-radius: 20px;">
+                    One-Tap Gmail Login
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
