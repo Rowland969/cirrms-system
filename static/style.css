@@ -150,6 +150,10 @@ h2 {
     margin-bottom: 20px;
 }
 
+.sign-in-btn {
+  margin-top: 20px;
+}
+
 label {
     display: block;
     margin-bottom: 8px;

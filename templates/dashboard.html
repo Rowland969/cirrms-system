@@ -39,9 +39,10 @@
                     </td>
                     <td style="padding: 14px; vertical-align: top;">
                         <select name="priority" form="form-{{ incident.id }}" class="form-select form-select-sm" style="border-radius: 8px;">
+                            <option value="" disabled selected hidden>Select Priority</option>
                             <option value="Normal" {% if incident.priority == 'Normal' %}selected{% endif %}>Normal</option>
-                            <option value="Urgent" {% if incident.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
-                            <option value="High" {% if incident.priority == 'High' %}selected{% endif %}>High</option>
+                            <option value="Urgent" {% if incident.priority == 'High' %}selected{% endif %}>High</option>
+                            <option value="High" {% if incident.priority == 'Urgent' %}selected{% endif %}>Urgent</option>
                         </select>
                     </td>
                     <td style="padding: 14px; vertical-align: top;">
