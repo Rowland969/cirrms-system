@@ -84,4 +84,60 @@
         </table>
     </div>
 </div>
+<div id="actionModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1050; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 16px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0px 10px 25px rgba(0,0,0,0.2);">
+        <h3 id="modalTitle" class="fw-bold mb-2" style="color: #1b4332;">Confirm Action</h3>
+        <p id="modalDesc" class="text-muted mb-4" style="font-size: 14px;">Are you sure you want to proceed with this action?</p>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+            <button type="button" id="closeActionModalBtn" class="btn btn-secondary px-4" style="border-radius: 8px;">Cancel</button>
+            <button type="button" id="modalConfirmBtn" class="btn text-white px-4 fw-bold" style="background-color: #1b4332; border-radius: 8px;">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeFormId = null;
+
+    document.getElementById('closeActionModalBtn').addEventListener('click', closeConfirmModal);
+
+    function openConfirmModal(type, id, incidentNum) {
+        const modal = document.getElementById('actionModal');
+        const title = document.getElementById('modalTitle');
+        const desc = document.getElementById('modalDesc');
+        const confirmBtn = document.getElementById('modalConfirmBtn');
+
+        if (type === 'save') {
+            activeFormId = 'form-' + id;
+            title.textContent = 'Save Incident Changes';
+            desc.textContent = `Are you sure you want to save updates for incident #INC-${incidentNum}?`;
+            confirmBtn.style.backgroundColor = '#1b4332';
+        } else if (type === 'delete') {
+            activeFormId = 'delete-form-' + id;
+            title.textContent = 'Delete Incident Report';
+            desc.textContent = `Are you sure you want to permanently delete incident #INC-${incidentNum}?`;
+            confirmBtn.style.backgroundColor = '#dc3545';
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('actionModal').style.display = 'none';
+        activeFormId = null;
+    }
+
+    document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+        if (activeFormId) {
+            document.getElementById(activeFormId).submit();
+        }
+    });
+
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('actionModal');
+        if (e.target === modal) {
+            closeConfirmModal();
+        }
+    });
+</script>
+
 {% endblock %}
